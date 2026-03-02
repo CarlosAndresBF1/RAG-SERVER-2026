@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "skills": {
+    "ai-rag-pipeline": {
+      "source": "inference-sh-9/skills",
+      "sourceType": "github",
+      "computedHash": "cadefcd6dbeab527b7991de603568a52419ef9488e56b53bad00b652e9d2eefb"
+    },
+    "docker-expert": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "76bd52d934142cb8f3861cb37f2a39ad93bf3b03dcbc94a02beaa0544f6dd7c2"
+    },
+    "fastapi-templates": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "fa51843cda87fc738f819c937cc697691255684d27d598dbc64a3a121e480064"
+    },
+    "rag-implementation": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "593f3b12b946a67978bccd5c2ddd599b060aec60d35f83fbda5764dfd982f099"
+    }
+  }
+}
