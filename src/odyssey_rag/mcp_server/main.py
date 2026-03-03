@@ -68,8 +68,10 @@ def main(argv: list[str] | None = None) -> None:
         logger.info("mcp_server.stdio_start")
         mcp.run(transport="stdio")
     else:
+        import uvicorn
+
         logger.info("mcp_server.http_start", host=args.host, port=args.port)
-        mcp.run(transport="sse", host=args.host, port=args.port)
+        uvicorn.run(mcp.sse_app(), host=args.host, port=args.port, log_level="info")
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@
   "servers": {
     "oddysey-rag": {
       "type": "sse",
-      "url": "http://localhost:3000/sse",
+      "url": "http://localhost:3010/sse",
       "headers": {
         "Authorization": "Bearer ${input:ODDYSEY_RAG_TOKEN}"
       }

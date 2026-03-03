@@ -40,7 +40,7 @@ services:
 
       # Embeddings (local nomic-embed-text)
       EMBEDDING_PROVIDER: nomic-local
-      EMBEDDING_MODEL: nomic-embed-text-v1.5
+      EMBEDDING_MODEL: nomic-ai/nomic-embed-text-v1.5
       EMBEDDING_DIMENSION: "768"
 
       # LLM provider
@@ -90,7 +90,7 @@ services:
 
       # Embeddings
       EMBEDDING_PROVIDER: nomic-local
-      EMBEDDING_MODEL: nomic-embed-text-v1.5
+      EMBEDDING_MODEL: nomic-ai/nomic-embed-text-v1.5
       EMBEDDING_DIMENSION: "768"
 
       # Reranker

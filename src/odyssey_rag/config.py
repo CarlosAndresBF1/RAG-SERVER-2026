@@ -57,12 +57,15 @@ class Settings(BaseSettings):
     def parse_api_keys(cls, v: object) -> list[str]:
         if isinstance(v, str):
             return [k.strip() for k in v.split(",") if k.strip()]
-        return list(v) if v else []
+        if isinstance(v, (list, tuple)):
+            return [str(k).strip() for k in v if str(k).strip()]
+        return []
 
     model_config = {
         "env_file": ".env",
         "case_sensitive": False,
         "extra": "ignore",
+        "env_ignore_empty": True,
     }
 
 

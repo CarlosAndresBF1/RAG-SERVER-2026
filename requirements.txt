@@ -12,6 +12,7 @@ pgvector==0.3.6
 
 # Embeddings & ML
 sentence-transformers==4.1.0
+einops==0.8.1
 numpy==2.2.6
 
 # LLM Providers
