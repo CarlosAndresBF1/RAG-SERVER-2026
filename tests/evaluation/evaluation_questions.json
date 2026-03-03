@@ -1,0 +1,540 @@
+[
+  {
+    "id": "MT-01",
+    "category": "find_message_type",
+    "tool": "find_message_type",
+    "query": "What are the mandatory fields in pacs.008 Group Header?",
+    "params": {"message_type": "pacs.008", "focus": "fields"},
+    "expected_sources": ["annex_b_spec"],
+    "expected_content": ["MsgId", "CreDtTm", "NbOfTxs", "SttlmInf"],
+    "expected_message_type": "pacs.008"
+  },
+  {
+    "id": "MT-02",
+    "category": "find_message_type",
+    "tool": "find_message_type",
+    "query": "Give me an overview of camt.056 recall message",
+    "params": {"message_type": "camt.056", "focus": "overview"},
+    "expected_sources": ["annex_b_spec"],
+    "expected_content": ["FIToFIPmtCxlReq", "recall", "cancellation"],
+    "expected_message_type": "camt.056"
+  },
+  {
+    "id": "MT-03",
+    "category": "find_message_type",
+    "tool": "find_message_type",
+    "query": "How is the pacs.004 return message structured?",
+    "params": {"message_type": "pacs.004", "focus": "overview"},
+    "expected_sources": ["annex_b_spec"],
+    "expected_content": ["PmtRtr", "return"],
+    "expected_message_type": "pacs.004"
+  },
+  {
+    "id": "MT-04",
+    "category": "find_message_type",
+    "tool": "find_message_type",
+    "query": "What XML envelope is used for pain.001?",
+    "params": {"message_type": "pain.001", "focus": "envelope"},
+    "expected_sources": ["annex_b_spec"],
+    "expected_content": ["AppHdr", "CstmrCdtTrfInitn", "BizMsgIdr"],
+    "expected_message_type": "pain.001"
+  },
+  {
+    "id": "MT-05",
+    "category": "find_message_type",
+    "tool": "find_message_type",
+    "query": "Show me an example XML for pacs.008",
+    "params": {"message_type": "pacs.008", "focus": "examples"},
+    "expected_sources": ["xml_example"],
+    "expected_content": ["FIToFICstmrCdtTrf", "GrpHdr"],
+    "expected_message_type": "pacs.008"
+  },
+  {
+    "id": "MT-06",
+    "category": "find_message_type",
+    "tool": "find_message_type",
+    "query": "What is the pacs.028 investigation request?",
+    "params": {"message_type": "pacs.028", "focus": "overview"},
+    "expected_sources": ["annex_b_spec"],
+    "expected_content": ["FIToFIPmtStsReq", "status", "investigation"],
+    "expected_message_type": "pacs.028"
+  },
+  {
+    "id": "MT-07",
+    "category": "find_message_type",
+    "tool": "find_message_type",
+    "query": "What fields are in pain.013 Request to Pay?",
+    "params": {"message_type": "pain.013", "focus": "fields"},
+    "expected_sources": ["annex_b_spec"],
+    "expected_content": ["CdtrPmtActvtnReq", "creditor", "amount"],
+    "expected_message_type": "pain.013"
+  },
+  {
+    "id": "MT-08",
+    "category": "find_message_type",
+    "tool": "find_message_type",
+    "query": "Describe the pain.014 response message",
+    "params": {"message_type": "pain.014", "focus": "overview"},
+    "expected_sources": ["annex_b_spec"],
+    "expected_content": ["CdtrPmtActvtnReqStsRpt", "acceptance"],
+    "expected_message_type": "pain.014"
+  },
+  {
+    "id": "MT-09",
+    "category": "find_message_type",
+    "tool": "find_message_type",
+    "query": "What is the camt.029 resolution of investigation?",
+    "params": {"message_type": "camt.029", "focus": "overview"},
+    "expected_sources": ["annex_b_spec"],
+    "expected_content": ["RsltnOfInvstgtn", "investigation"],
+    "expected_message_type": "camt.029"
+  },
+  {
+    "id": "MT-10",
+    "category": "find_message_type",
+    "tool": "find_message_type",
+    "query": "How is pacs.002 status report structured?",
+    "params": {"message_type": "pacs.002", "focus": "fields"},
+    "expected_sources": ["annex_b_spec"],
+    "expected_content": ["FIToFIPmtStsRpt", "TxInfAndSts"],
+    "expected_message_type": "pacs.002"
+  },
+  {
+    "id": "MT-11",
+    "category": "find_message_type",
+    "tool": "find_message_type",
+    "query": "What PHP class builds the pacs.008 credit transfer?",
+    "params": {"message_type": "pacs.008", "focus": "builder"},
+    "expected_sources": ["php_code"],
+    "expected_content": ["Pacs008CreditTransfer", "buildDocument"],
+    "expected_message_type": "pacs.008"
+  },
+  {
+    "id": "MT-12",
+    "category": "find_message_type",
+    "tool": "find_message_type",
+    "query": "How does the pacs.008 parser extract fields?",
+    "params": {"message_type": "pacs.008", "focus": "parser"},
+    "expected_sources": ["php_code"],
+    "expected_content": ["Pacs008Parser", "parse"],
+    "expected_message_type": "pacs.008"
+  },
+  {
+    "id": "BR-01",
+    "category": "find_business_rule",
+    "tool": "find_business_rule",
+    "query": "Which fields are mandatory in pacs.008?",
+    "params": {"message_type": "pacs.008", "rule_status": "M"},
+    "expected_sources": ["annex_b_spec"],
+    "expected_content": ["MsgId", "M"]
+  },
+  {
+    "id": "BR-02",
+    "category": "find_business_rule",
+    "tool": "find_business_rule",
+    "query": "What are the conditional fields in camt.056?",
+    "params": {"message_type": "camt.056", "rule_status": "C"},
+    "expected_sources": ["annex_b_spec"],
+    "expected_content": ["C", "conditional"]
+  },
+  {
+    "id": "BR-03",
+    "category": "find_business_rule",
+    "tool": "find_business_rule",
+    "query": "What data type is the Amount field in pacs.008?",
+    "params": {"message_type": "pacs.008"},
+    "expected_sources": ["annex_b_spec"],
+    "expected_content": ["ActiveCurrencyAndAmount", "IntrBkSttlmAmt"]
+  },
+  {
+    "id": "BR-04",
+    "category": "find_business_rule",
+    "tool": "find_business_rule",
+    "query": "What is the multiplicity of CdtTrfTxInf in pacs.008?",
+    "params": {"message_type": "pacs.008"},
+    "expected_sources": ["annex_b_spec"],
+    "expected_content": ["CdtTrfTxInf"]
+  },
+  {
+    "id": "BR-05",
+    "category": "find_business_rule",
+    "tool": "find_business_rule",
+    "query": "What ISO code list is used for rejection reasons?",
+    "params": {},
+    "expected_sources": ["annex_b_spec"],
+    "expected_content": ["RJCT", "reason code"]
+  },
+  {
+    "id": "BR-06",
+    "category": "find_business_rule",
+    "tool": "find_business_rule",
+    "query": "What XPath is the debtor BIC in pacs.008?",
+    "params": {"message_type": "pacs.008"},
+    "expected_sources": ["annex_b_spec"],
+    "expected_content": ["DbtrAgt", "BIC"]
+  },
+  {
+    "id": "BR-07",
+    "category": "find_business_rule",
+    "tool": "find_business_rule",
+    "query": "What fields are optional in pain.001?",
+    "params": {"message_type": "pain.001", "rule_status": "O"},
+    "expected_sources": ["annex_b_spec"],
+    "expected_content": ["O", "optional"]
+  },
+  {
+    "id": "BR-08",
+    "category": "find_business_rule",
+    "tool": "find_business_rule",
+    "query": "What are the settlement method options in pacs.008?",
+    "params": {"message_type": "pacs.008"},
+    "expected_sources": ["annex_b_spec"],
+    "expected_content": ["SttlmMtd", "CLRG", "settlement"]
+  },
+  {
+    "id": "BR-09",
+    "category": "find_business_rule",
+    "tool": "find_business_rule",
+    "query": "What is the maximum length of MsgId?",
+    "params": {},
+    "expected_sources": ["annex_b_spec"],
+    "expected_content": ["Max35Text", "MsgId"]
+  },
+  {
+    "id": "BR-10",
+    "category": "find_business_rule",
+    "tool": "find_business_rule",
+    "query": "What are the required fields in AppHdr?",
+    "params": {},
+    "expected_sources": ["annex_b_spec"],
+    "expected_content": ["Fr", "To", "BizMsgIdr", "MsgDefIdr"]
+  },
+  {
+    "id": "BR-11",
+    "category": "find_business_rule",
+    "tool": "find_business_rule",
+    "query": "What is the BIC format constraint?",
+    "params": {"data_type": "BIC"},
+    "expected_sources": ["annex_b_spec"],
+    "expected_content": ["BIC", "BICFI"]
+  },
+  {
+    "id": "BR-12",
+    "category": "find_business_rule",
+    "tool": "find_business_rule",
+    "query": "What are the mandatory fields in pacs.002 transaction info?",
+    "params": {"message_type": "pacs.002", "rule_status": "M"},
+    "expected_sources": ["annex_b_spec"],
+    "expected_content": ["TxInfAndSts", "M"]
+  },
+  {
+    "id": "MOD-01",
+    "category": "find_module",
+    "tool": "find_module",
+    "query": "Which PHP class builds pacs.008 messages?",
+    "params": {"module": "Bimpay/Messages"},
+    "expected_sources": ["php_code"],
+    "expected_content": ["Pacs008CreditTransfer", "buildDocument"]
+  },
+  {
+    "id": "MOD-02",
+    "category": "find_module",
+    "tool": "find_module",
+    "query": "How does the camt.056 recall parser work?",
+    "params": {"module": "Bimpay/Parsers"},
+    "expected_sources": ["php_code"],
+    "expected_content": ["Camt056", "parse"]
+  },
+  {
+    "id": "MOD-03",
+    "category": "find_module",
+    "tool": "find_module",
+    "query": "Where is the XML digital signature implemented?",
+    "params": {"module": "Bimpay", "focus": "signing"},
+    "expected_sources": ["php_code"],
+    "expected_content": ["XmlDSigSigner", "sign"]
+  },
+  {
+    "id": "MOD-04",
+    "category": "find_module",
+    "tool": "find_module",
+    "query": "How does validation work for ISO messages?",
+    "params": {"module": "Bimpay", "focus": "validators"},
+    "expected_sources": ["php_code"],
+    "expected_content": ["ValidationEngine", "validate"]
+  },
+  {
+    "id": "MOD-05",
+    "category": "find_module",
+    "tool": "find_module",
+    "query": "What class handles the message envelope?",
+    "params": {"module": "Bimpay"},
+    "expected_sources": ["php_code"],
+    "expected_content": ["MessageEnvelope", "AppHdr"]
+  },
+  {
+    "id": "MOD-06",
+    "category": "find_module",
+    "tool": "find_module",
+    "query": "Where are the XSD schemas loaded?",
+    "params": {"module": "Bimpay"},
+    "expected_sources": ["php_code"],
+    "expected_content": ["XmlSchemaValidator", "schema"]
+  },
+  {
+    "id": "MOD-07",
+    "category": "find_module",
+    "tool": "find_module",
+    "query": "How is the BIC identifier validated?",
+    "params": {"module": "Bimpay"},
+    "expected_sources": ["php_code"],
+    "expected_content": ["BicIdentifier", "validate"]
+  },
+  {
+    "id": "MOD-08",
+    "category": "find_module",
+    "tool": "find_module",
+    "query": "What tests exist for pacs.008?",
+    "params": {"module": "Bimpay", "focus": "tests"},
+    "expected_sources": ["php_code"],
+    "expected_content": ["pacs008", "test"]
+  },
+  {
+    "id": "MOD-09",
+    "category": "find_module",
+    "tool": "find_module",
+    "query": "How does the Amount class work?",
+    "params": {"module": "Bimpay"},
+    "expected_sources": ["php_code"],
+    "expected_content": ["Amount", "currency"]
+  },
+  {
+    "id": "MOD-10",
+    "category": "find_module",
+    "tool": "find_module",
+    "query": "How is XML building done for ISO messages?",
+    "params": {"module": "Bimpay"},
+    "expected_sources": ["php_code"],
+    "expected_content": ["XmlBuilder", "createElement"]
+  },
+  {
+    "id": "MOD-11",
+    "category": "find_module",
+    "tool": "find_module",
+    "query": "What is the base class for all Bimpay message builders?",
+    "params": {"module": "Bimpay"},
+    "expected_sources": ["php_code"],
+    "expected_content": ["BaseMessage", "toXml"]
+  },
+  {
+    "id": "MOD-12",
+    "category": "find_module",
+    "tool": "find_module",
+    "query": "What return reason codes are defined in PHP?",
+    "params": {"module": "Bimpay/Codes"},
+    "expected_sources": ["php_code"],
+    "expected_content": ["ReturnReasonCode", "getAllCodes"]
+  },
+  {
+    "id": "ERR-01",
+    "category": "find_error",
+    "tool": "find_error",
+    "query": "What does RJCT status mean in pacs.002?",
+    "params": {"iso_status": "RJCT"},
+    "expected_sources": ["annex_b_spec"],
+    "expected_content": ["Rejected", "RJCT", "reason code"]
+  },
+  {
+    "id": "ERR-02",
+    "category": "find_error",
+    "tool": "find_error",
+    "query": "What is reason code AC03?",
+    "params": {"reason_code": "AC03"},
+    "expected_sources": ["annex_b_spec"],
+    "expected_content": ["AC03", "account"]
+  },
+  {
+    "id": "ERR-03",
+    "category": "find_error",
+    "tool": "find_error",
+    "query": "How do I handle an AM04 insufficient funds rejection?",
+    "params": {"reason_code": "AM04"},
+    "expected_sources": ["annex_b_spec"],
+    "expected_content": ["AM04", "funds", "amount"]
+  },
+  {
+    "id": "ERR-04",
+    "category": "find_error",
+    "tool": "find_error",
+    "query": "What does ACSP status mean?",
+    "params": {"iso_status": "ACSP"},
+    "expected_sources": ["annex_b_spec"],
+    "expected_content": ["ACSP", "accepted", "settlement"]
+  },
+  {
+    "id": "ERR-05",
+    "category": "find_error",
+    "tool": "find_error",
+    "query": "What is the FF01 invalid file format error?",
+    "params": {"reason_code": "FF01"},
+    "expected_sources": ["annex_b_spec"],
+    "expected_content": ["FF01", "format"]
+  },
+  {
+    "id": "ERR-06",
+    "category": "find_error",
+    "tool": "find_error",
+    "query": "How to fix a PDNG pending status?",
+    "params": {"iso_status": "PDNG"},
+    "expected_sources": ["annex_b_spec"],
+    "expected_content": ["Pending", "PDNG"]
+  },
+  {
+    "id": "ERR-07",
+    "category": "find_error",
+    "tool": "find_error",
+    "query": "What happens when schema validation fails?",
+    "params": {},
+    "expected_sources": ["php_code"],
+    "expected_content": ["XmlSchemaValidator", "validation", "error"]
+  },
+  {
+    "id": "ERR-08",
+    "category": "find_error",
+    "tool": "find_error",
+    "query": "What does DT01 invalid date error mean?",
+    "params": {"reason_code": "DT01"},
+    "expected_sources": ["annex_b_spec"],
+    "expected_content": ["DT01", "date"]
+  },
+  {
+    "id": "ERR-09",
+    "category": "find_error",
+    "tool": "find_error",
+    "query": "What are all cancellation reason codes?",
+    "params": {"code_type": "CancellationReasonCode"},
+    "expected_sources": ["annex_b_spec", "php_code"],
+    "expected_content": ["DUPL", "FRAD", "TECH"]
+  },
+  {
+    "id": "ERR-10",
+    "category": "find_error",
+    "tool": "find_error",
+    "query": "What does ACCC accepted credit completed mean?",
+    "params": {"iso_status": "ACCC"},
+    "expected_sources": ["annex_b_spec"],
+    "expected_content": ["ACCC", "accepted", "credit"]
+  },
+  {
+    "id": "FT-01",
+    "category": "search",
+    "tool": "search",
+    "query": "How does Bimpay process instant payments?",
+    "params": {},
+    "expected_sources": ["tech_doc", "php_code"],
+    "expected_content": ["payment", "Bimpay"]
+  },
+  {
+    "id": "FT-02",
+    "category": "search",
+    "tool": "search",
+    "query": "What is the Odyssey project architecture?",
+    "params": {},
+    "expected_sources": ["tech_doc", "claude_context"],
+    "expected_content": ["Odyssey", "architecture"]
+  },
+  {
+    "id": "FT-03",
+    "category": "search",
+    "tool": "search",
+    "query": "How is the Bimpay Docker infrastructure set up?",
+    "params": {},
+    "expected_sources": ["tech_doc"],
+    "expected_content": ["Docker", "container"]
+  },
+  {
+    "id": "FT-04",
+    "category": "search",
+    "tool": "search",
+    "query": "What Postman endpoints are available for testing?",
+    "params": {},
+    "expected_sources": ["postman_collection"],
+    "expected_content": ["POST", "endpoint", "request"]
+  },
+  {
+    "id": "FT-05",
+    "category": "search",
+    "tool": "search",
+    "query": "How do I add a new ISO message type to Bimpay?",
+    "params": {},
+    "expected_sources": ["php_code", "tech_doc"],
+    "expected_content": ["BaseMessage", "extends"]
+  },
+  {
+    "id": "FT-06",
+    "category": "search",
+    "tool": "search",
+    "query": "What is the difference between pacs.008 and pain.001?",
+    "params": {},
+    "expected_sources": ["annex_b_spec"],
+    "expected_content": ["pacs.008", "pain.001", "credit transfer"]
+  },
+  {
+    "id": "FT-07",
+    "category": "search",
+    "tool": "search",
+    "query": "How are XML namespaces handled?",
+    "params": {},
+    "expected_sources": ["php_code"],
+    "expected_content": ["namespace"]
+  },
+  {
+    "id": "FT-08",
+    "category": "search",
+    "tool": "search",
+    "query": "What is the mTLS certificate configuration?",
+    "params": {},
+    "expected_sources": ["tech_doc"],
+    "expected_content": ["mTLS", "certificate", "TLS"]
+  },
+  {
+    "id": "FT-09",
+    "category": "search",
+    "tool": "search",
+    "query": "How does the polling service work?",
+    "params": {},
+    "expected_sources": ["tech_doc", "php_code"],
+    "expected_content": ["poll", "IPS", "incoming"]
+  },
+  {
+    "id": "FT-10",
+    "category": "search",
+    "tool": "search",
+    "query": "What is the Montran IPS API?",
+    "params": {},
+    "expected_sources": ["tech_doc"],
+    "expected_content": ["Montran", "IPS"]
+  },
+  {
+    "id": "GAP-01",
+    "category": "gap_detection",
+    "tool": "search",
+    "query": "What are the runbook steps for a RJCT in production?",
+    "params": {},
+    "expected_sources": [],
+    "expected_content": [],
+    "expect_gap": true,
+    "notes": "Runbook docs not indexed — should report a gap"
+  },
+  {
+    "id": "GAP-02",
+    "category": "gap_detection",
+    "tool": "find_message_type",
+    "query": "Show me XML for a pacs.028 investigation",
+    "params": {"message_type": "pacs.028", "focus": "examples"},
+    "expected_sources": ["xml_example"],
+    "expected_content": ["pacs.028"],
+    "expect_gap": true,
+    "notes": "May not have pacs.028 XML examples — gap should be reported"
+  }
+]

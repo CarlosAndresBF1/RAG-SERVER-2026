@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BizMsgEnvlp>
+  <AppHdr xmlns="urn:iso:std:iso:20022:tech:xsd:head.001.001.03">
+    <Fr>
+      <FIId>
+        <FinInstnId>
+          <BICFI>BIMPAYBB</BICFI>
+        </FinInstnId>
+      </FIId>
+    </Fr>
+    <To>
+      <FIId>
+        <FinInstnId>
+          <BICFI>DESTBBBB</BICFI>
+        </FinInstnId>
+      </FIId>
+    </To>
+    <BizMsgIdr>MSG-20240301-001</BizMsgIdr>
+    <MsgDefIdr>pacs.008.001.12</MsgDefIdr>
+    <CreDt>2024-03-01T10:00:00Z</CreDt>
+  </AppHdr>
+  <Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.12">
+    <FIToFICstmrCdtTrf>
+      <GrpHdr>
+        <MsgId>BIMPAY-20240301-PACS008-001</MsgId>
+        <CreDtTm>2024-03-01T10:00:00Z</CreDtTm>
+        <NbOfTxs>1</NbOfTxs>
+        <SttlmInf>
+          <SttlmMtd>CLRG</SttlmMtd>
+          <ClrSys>
+            <Cd>IPS</Cd>
+          </ClrSys>
+        </SttlmInf>
+      </GrpHdr>
+      <CdtTrfTxInf>
+        <PmtId>
+          <InstrId>INSTR-001</InstrId>
+          <EndToEndId>E2E-20240301-001</EndToEndId>
+          <UETR>97ed4827-7b6f-4491-a06f-b548d5a7512d</UETR>
+        </PmtId>
+        <IntrBkSttlmAmt Ccy="EUR">1000.00</IntrBkSttlmAmt>
+        <IntrBkSttlmDt>2024-03-01</IntrBkSttlmDt>
+        <Dbtr>
+          <Nm>Acme Corporation</Nm>
+          <Id>
+            <OrgId>
+              <AnyBIC>ACMEBEBB</AnyBIC>
+            </OrgId>
+          </Id>
+        </Dbtr>
+        <DbtrAgt>
+          <FinInstnId>
+            <BICFI>BIMPAYBB</BICFI>
+          </FinInstnId>
+        </DbtrAgt>
+        <Cdtr>
+          <Nm>Beta Services</Nm>
+          <Id>
+            <OrgId>
+              <AnyBIC>BETABBBB</AnyBIC>
+            </OrgId>
+          </Id>
+        </Cdtr>
+        <CdtrAgt>
+          <FinInstnId>
+            <BICFI>DESTBBBB</BICFI>
+          </FinInstnId>
+        </CdtrAgt>
+        <Purp>
+          <Cd>SUPP</Cd>
+        </Purp>
+      </CdtTrfTxInf>
+    </FIToFICstmrCdtTrf>
+  </Document>
+</BizMsgEnvlp>

@@ -1,9 +1,29 @@
 {
   "servers": {
-    "odyssey-rag": {
+    "oddysey-rag": {
       "type": "sse",
       "url": "http://localhost:3000/sse",
-      "headers": {}
+      "headers": {
+        "Authorization": "Bearer ${input:ODDYSEY_RAG_TOKEN}"
+      }
+    },
+    "oddysey-rag-local": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["-m", "odyssey_rag.mcp_server", "--transport", "stdio"],
+      "cwd": "${workspaceFolder}/RAG/src",
+      "env": {
+        "DATABASE_URL": "postgresql+asyncpg://rag_user:changeme@localhost:5432/odyssey_rag",
+        "EMBEDDING_PROVIDER": "nomic-local"
+      }
     }
-  }
+  },
+  "inputs": [
+    {
+      "id": "ODDYSEY_RAG_TOKEN",
+      "type": "promptString",
+      "description": "API key for the Odyssey RAG MCP server",
+      "password": true
+    }
+  ]
 }

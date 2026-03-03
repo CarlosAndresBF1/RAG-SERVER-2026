@@ -11,12 +11,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Python dependencies
-COPY requirements.txt requirements-dev.txt ./
+COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy source
 COPY src/ ./src/
-COPY config/ ./config/
 COPY scripts/ ./scripts/
 COPY db/ ./db/
 
@@ -32,7 +31,7 @@ RUN python -c "from sentence_transformers import CrossEncoder; CrossEncoder('cro
 
 EXPOSE 8080
 
-CMD ["uvicorn", "odyssey_rag.main:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "2"]
+CMD ["uvicorn", "odyssey_rag.api.main:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "2"]
 
 # ── Stage 3: MCP Server ──────────────────────────────
 FROM base AS mcp
@@ -44,6 +43,7 @@ CMD ["python", "-m", "odyssey_rag.mcp_server.main"]
 # ── Stage 4: Dev (all tools) ─────────────────────────
 FROM base AS dev
 
+COPY requirements-dev.txt ./
 RUN pip install --no-cache-dir -r requirements-dev.txt
 
 # Download models

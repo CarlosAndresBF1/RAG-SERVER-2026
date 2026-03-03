@@ -50,7 +50,11 @@ services:
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
 
       # Reranker
+      RERANKER_ENABLED: ${RERANKER_ENABLED:-true}
       RERANKER_MODEL: cross-encoder/ms-marco-MiniLM-L-6-v2
+
+      # API auth
+      API_KEYS: ${API_KEYS:-}
 
       # App
       LOG_LEVEL: ${LOG_LEVEL:-info}
@@ -78,15 +82,30 @@ services:
     container_name: odyssey-mcp-server
     restart: unless-stopped
     depends_on:
-      rag-api:
+      postgres:
         condition: service_healthy
     environment:
-      RAG_API_URL: http://rag-api:8080
+      # Database (MCP server queries DB directly via the retrieval engine)
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-rag_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-odyssey_rag}
+
+      # Embeddings
+      EMBEDDING_PROVIDER: nomic-local
+      EMBEDDING_MODEL: nomic-embed-text-v1.5
+      EMBEDDING_DIMENSION: "768"
+
+      # Reranker
+      RERANKER_ENABLED: ${RERANKER_ENABLED:-true}
+      RERANKER_MODEL: cross-encoder/ms-marco-MiniLM-L-6-v2
+
+      # MCP transport (read by mcp_server/main.py via env vars)
       MCP_TRANSPORT: ${MCP_TRANSPORT:-http}
       MCP_PORT: "3000"
+
       LOG_LEVEL: ${LOG_LEVEL:-info}
     ports:
       - "${MCP_PORT:-3000}:3000"
+    volumes:
+      - rag-models:/app/models          # Share cached model weights with api
     networks:
       - rag-net
 

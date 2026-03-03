@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -46,6 +47,17 @@ class Settings(BaseSettings):
     environment: str = "development"  # development | staging | production
     log_level: str = "info"
     rag_api_url: str = "http://localhost:8080"
+
+    # ── Auth ──────────────────────────────────
+    # Comma-separated list of valid API keys, e.g. "key-abc123,key-def456"
+    api_keys: list[str] = []
+
+    @field_validator("api_keys", mode="before")
+    @classmethod
+    def parse_api_keys(cls, v: object) -> list[str]:
+        if isinstance(v, str):
+            return [k.strip() for k in v.split(",") if k.strip()]
+        return list(v) if v else []
 
     model_config = {
         "env_file": ".env",

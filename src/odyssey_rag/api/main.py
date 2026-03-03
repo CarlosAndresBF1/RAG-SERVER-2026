@@ -1,0 +1,129 @@
+"""FastAPI application entry point.
+
+Creates and configures the Odyssey RAG API application with all routers,
+exception handlers, and the /health endpoint.
+
+Usage:
+    uvicorn odyssey_rag.api.main:app --host 0.0.0.0 --port 8080
+"""
+
+from __future__ import annotations
+
+from contextlib import asynccontextmanager
+
+import structlog
+from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+from odyssey_rag.api.errors import http_exception_handler, validation_exception_handler
+from odyssey_rag.api.routes import chunks, feedback, ingest, search, sources
+from odyssey_rag.config import get_settings
+from odyssey_rag.db.session import close_engine, get_engine
+
+logger = structlog.get_logger(__name__)
+
+APP_VERSION = "0.1.0"
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan — warm up on startup, clean up on shutdown."""
+    logger.info("startup", version=APP_VERSION)
+    get_engine()  # initialise connection pool
+    yield
+    logger.info("shutdown")
+    await close_engine()
+
+
+def create_app() -> FastAPI:
+    """Build and configure the FastAPI application."""
+    settings = get_settings()
+
+    app = FastAPI(
+        title="Odyssey RAG API",
+        version=APP_VERSION,
+        description=(
+            "RAG system for Odyssey project knowledge — ISO 20022 / Bimpay domain"
+        ),
+        lifespan=lifespan,
+    )
+
+    # ── Exception handlers ────────────────────────────────────────────────────
+    app.add_exception_handler(StarletteHTTPException, http_exception_handler)
+    app.add_exception_handler(RequestValidationError, validation_exception_handler)
+
+    # ── API routers ───────────────────────────────────────────────────────────
+    app.include_router(search.router, prefix="/api/v1", tags=["search"])
+    app.include_router(ingest.router, prefix="/api/v1", tags=["ingest"])
+    app.include_router(sources.router, prefix="/api/v1", tags=["sources"])
+    app.include_router(chunks.router, prefix="/api/v1", tags=["chunks"])
+    app.include_router(feedback.router, prefix="/api/v1", tags=["feedback"])
+
+    # ── Health endpoint ───────────────────────────────────────────────────────
+
+    @app.get("/health", tags=["health"], summary="Service health check")
+    async def health():
+        """Return the health status of all dependent services.
+
+        Always public — no API key required.
+        """
+        from sqlalchemy import text
+
+        from odyssey_rag.db.session import get_session_factory
+        from odyssey_rag.embeddings.factory import create_embedding_provider
+
+        service_status: dict[str, str] = {
+            "database": "ok",
+            "embedding_model": "ok",
+            "reranker": "ok",
+        }
+        degraded = False
+
+        # ── Database ping ─────────────────────────────────────────────────
+        try:
+            factory = get_session_factory()
+            async with factory() as sess:
+                await sess.execute(text("SELECT 1"))
+        except Exception as exc:
+            service_status["database"] = "error"
+            degraded = True
+            logger.warning("health.db_error", error=str(exc))
+
+        # ── Embedding model ───────────────────────────────────────────────
+        try:
+            create_embedding_provider(settings)
+        except Exception as exc:
+            service_status["embedding_model"] = "error"
+            degraded = True
+            logger.warning("health.embedding_error", error=str(exc))
+
+        # ── Reranker ──────────────────────────────────────────────────────
+        try:
+            if settings.reranker_enabled:
+                from odyssey_rag.api.deps import get_retrieval_engine
+
+                get_retrieval_engine()
+        except Exception as exc:
+            service_status["reranker"] = "error"
+            degraded = True
+            logger.warning("health.reranker_error", error=str(exc))
+
+        overall = "degraded" if degraded else "ok"
+        payload = {
+            "status": overall,
+            "version": APP_VERSION,
+            "services": service_status,
+        }
+
+        if degraded:
+            from fastapi.responses import JSONResponse
+
+            return JSONResponse(status_code=503, content=payload)
+
+        return payload
+
+    return app
+
+
+app = create_app()

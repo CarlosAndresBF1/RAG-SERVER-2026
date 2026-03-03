@@ -1,0 +1,68 @@
+{
+  "info": {
+    "name": "BIMPAY IPS API",
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "description": "IPS payment messages for BIMPAY integration",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "pacs.008 — Credit Transfer",
+      "item": [
+        {
+          "name": "Send pacs.008 Credit Transfer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/xml"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/messages/pacs008",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "messages", "pacs008"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "<!-- pacs.008 FI-to-FI Credit Transfer -->\n<FIToFICstmrCdtTrf><GrpHdr><MsgId>TEST-001</MsgId></GrpHdr></FIToFICstmrCdtTrf>"
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK — Accepted",
+              "status": "OK",
+              "code": 200,
+              "body": "{\"status\": \"accepted\", \"msgId\": \"TEST-001\"}"
+            },
+            {
+              "name": "400 Bad Request — Invalid XML",
+              "status": "Bad Request",
+              "code": 400,
+              "body": "{\"error\": \"invalid_xml\", \"message\": \"XML validation failed\"}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "pacs.002 — Payment Status",
+      "item": [
+        {
+          "name": "Query Payment Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/messages/pacs002/{{msgId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "messages", "pacs002", "{{msgId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
