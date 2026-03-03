@@ -1,1 +1,58 @@
+# ── Python ────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+# ── Virtual Environments ──────────────────
+.venv/
+venv/
+ENV/
+
+# ── IDE ───────────────────────────────────
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ── Environment & Secrets ─────────────────
+.env
+.env.local
+.env.production
+*.pem
+*.key
+
+# ── Docker ────────────────────────────────
+# Don't ignore docker-compose.yml or Dockerfile
+
+# ── Test / Coverage ───────────────────────
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# ── Models (large files) ─────────────────
+models/
+*.onnx
+*.bin
+*.pt
+*.safetensors
+
+# ── Data (user-provided sources) ──────────
+data/sources/*
+!data/sources/README.md
+!data/sources/.gitkeep
+
+# ── Misc ──────────────────────────────────
+*.log
+tmp/
+.ruff_cache/
+
+# ── Original instructions (reference only)
 instructions.md

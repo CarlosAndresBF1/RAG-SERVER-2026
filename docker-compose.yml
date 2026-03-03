@@ -1,0 +1,101 @@
+# docker-compose.yml
+
+services:
+  # ─── PostgreSQL + pgvector ──────────────────────────────
+  postgres:
+    image: pgvector/pgvector:0.7.4-pg16
+    container_name: odyssey-rag-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-odyssey_rag}
+      POSTGRES_USER: ${POSTGRES_USER:-rag_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-rag_user} -d ${POSTGRES_DB:-odyssey_rag}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - rag-net
+
+  # ─── RAG API (FastAPI) ─────────────────────────────────
+  rag-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: api
+    container_name: odyssey-rag-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Database
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-rag_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-odyssey_rag}
+
+      # Embeddings (local nomic-embed-text)
+      EMBEDDING_PROVIDER: nomic-local
+      EMBEDDING_MODEL: nomic-embed-text-v1.5
+      EMBEDDING_DIMENSION: "768"
+
+      # LLM provider
+      LLM_PROVIDER: ${LLM_PROVIDER:-openai}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+
+      # Reranker
+      RERANKER_MODEL: cross-encoder/ms-marco-MiniLM-L-6-v2
+
+      # App
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+    ports:
+      - "${RAG_API_PORT:-8080}:8080"
+    volumes:
+      - rag-models:/app/models          # Cached model weights
+      - ./data/sources:/app/sources:ro  # Source documents (read-only)
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8080/health').raise_for_status()"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    networks:
+      - rag-net
+
+  # ─── MCP Server ────────────────────────────────────────
+  mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: mcp
+    container_name: odyssey-mcp-server
+    restart: unless-stopped
+    depends_on:
+      rag-api:
+        condition: service_healthy
+    environment:
+      RAG_API_URL: http://rag-api:8080
+      MCP_TRANSPORT: ${MCP_TRANSPORT:-http}
+      MCP_PORT: "3000"
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - "${MCP_PORT:-3000}:3000"
+    networks:
+      - rag-net
+
+volumes:
+  pgdata:
+    driver: local
+  rag-models:
+    driver: local
+
+networks:
+  rag-net:
+    driver: bridge

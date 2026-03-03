@@ -1,0 +1,3 @@
+-- db/init/003_seed_config.sql
+-- Optional: seed any initial configuration rows
+-- (empty for now, acts as placeholder for future config tables)

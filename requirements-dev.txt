@@ -1,0 +1,19 @@
+# requirements-dev.txt — Development dependencies (pinned)
+# Extends requirements.txt
+
+-r requirements.txt
+
+# Testing
+pytest==8.3.5
+pytest-asyncio==0.26.0
+pytest-cov==6.2.1
+
+# Linting & Formatting
+ruff==0.11.12
+
+# Type Checking
+mypy==1.16.0
+types-setuptools==78.1.0.20250529
+
+# HTTP testing client (already in prod, pin dev version too)
+httpx==0.28.1

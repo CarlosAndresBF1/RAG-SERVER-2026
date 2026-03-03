@@ -1,0 +1,47 @@
+# ── .dockerignore ──────────────────────────
+# Reduce Docker build context size
+
+# Git
+.git/
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.eggs/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Test/Quality
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Documentation (not needed in container)
+IAContext/
+*.md
+!data/sources/README.md
+
+# Environment files (secrets injected via compose)
+.env
+.env.*
+
+# Docker files (not needed inside)
+docker-compose.yml
+Dockerfile
+
+# Models (downloaded at build time)
+models/
+
+# Misc
+*.log
+tmp/
