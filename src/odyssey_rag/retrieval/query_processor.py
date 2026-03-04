@@ -188,14 +188,15 @@ class QueryProcessor:
     def _build_bm25_query(
         self, normalized: str, msg_type: Optional[str]
     ) -> str:
-        """Expand abbreviations and add synonyms for BM25 search."""
-        expanded = normalized
-        for abbr, full in EXPANSIONS.items():
-            if abbr.lower() in expanded:
-                expanded = f"{expanded} {full}"
-        if msg_type and msg_type not in expanded:
-            expanded = f"{msg_type} {expanded}"
-        return expanded
+        """Build a focused BM25 query using original terms only.
+
+        websearch_to_tsquery applies AND semantics, so keeping the query
+        short avoids over-restriction. Abbreviation expansion is done only
+        for vector search (semantic) not BM25 (keyword AND).
+        """
+        if msg_type and msg_type not in normalized:
+            return f"{msg_type} {normalized}"
+        return normalized
 
     def _build_vector_query(
         self,

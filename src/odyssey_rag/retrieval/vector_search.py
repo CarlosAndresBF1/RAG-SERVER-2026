@@ -91,8 +91,8 @@ async def vector_search(
         JOIN document d ON c.document_id = d.id
         LEFT JOIN chunk_metadata cm ON c.id = cm.chunk_id
         WHERE d.is_current = TRUE
-          AND (:msg_type IS NULL OR cm.message_type = :msg_type)
-          AND (:source_type IS NULL OR d.source_type = :source_type)
+          AND (CAST(:msg_type AS TEXT) IS NULL OR cm.message_type = CAST(:msg_type AS TEXT))
+          AND (CAST(:source_type AS TEXT) IS NULL OR d.source_type = CAST(:source_type AS TEXT))
         ORDER BY ce.embedding <=> CAST(:embedding AS vector)
         LIMIT :limit
         """
@@ -104,6 +104,13 @@ async def vector_search(
     results: list[SearchResult] = []
     try:
         async with db_session() as session:
+            # When source_type is pre-filtered, disable the HNSW index so PostgreSQL
+            # uses a sequential scan.  The HNSW index only supports post-filtering
+            # (finds global top-k, then applies WHERE), which misses document types
+            # whose embeddings are far from query embeddings in the global space
+            # (e.g. xml_example, which contains structured XML rather than prose).
+            if source_type:
+                await session.execute(text("SET LOCAL enable_indexscan = off"))
             rows = await session.execute(
                 sql,
                 {

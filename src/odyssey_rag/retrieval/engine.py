@@ -30,9 +30,9 @@ from odyssey_rag.retrieval.vector_search import SearchResult, vector_search
 logger = structlog.get_logger(__name__)
 
 # Search candidate limits
-_VECTOR_LIMIT = 30
+_VECTOR_LIMIT = 50
 _BM25_LIMIT = 30
-_RRF_TOP_N = 20
+_RRF_TOP_N = 30
 
 
 class RetrievalEngine:
@@ -61,7 +61,7 @@ class RetrievalEngine:
         settings = get_settings()
         self.query_processor = QueryProcessor()
         self.response_builder = ResponseBuilder(
-            threshold=settings.reranker_enabled and 0.3 or 0.0,
+            threshold=0.0,  # No score filter — DB pre-filtering handles source type; cross-encoder orders by relevance
             max_evidence_items=settings.default_top_k,
         )
         if settings.reranker_enabled:
@@ -102,7 +102,25 @@ class RetrievalEngine:
         processed = self.query_processor.process(raw_query, tool_context)
         log.debug("query_processed", msg_type=processed.detected_message_type)
 
-        # 2. Embed query for vector search
+        # 2. Get tool strategy early (needed to build merged filters)
+        strategy = get_strategy(tool_name)
+
+        # 3. Build merged metadata filters: query filters + strategy filters + focus filters
+        all_filters: dict[str, str] = {**processed.metadata_filters}
+        all_filters.update(strategy.metadata_filters)
+        # Apply focus-specific source_type filter when focus param is provided
+        focus = (tool_context or {}).get("focus")
+        if focus:
+            focus_meta = strategy.focus_filters.get(focus, {})
+            if "source_type" in focus_meta:
+                all_filters["source_type"] = focus_meta["source_type"]
+        # When source_type is pre-filtered, remove message_type — some document types
+        # (e.g. xml_example) store no message_type in chunk_metadata, so the DB filter
+        # would return zero rows. Vector similarity handles message specificity instead.
+        if "source_type" in all_filters:
+            all_filters.pop("message_type", None)
+
+        # 4. Embed query for vector search
         try:
             settings = get_settings()
             embedding_provider = create_embedding_provider(settings)
@@ -112,20 +130,24 @@ class RetrievalEngine:
             log.warning("embed_query_failed", error=str(exc))
             query_embedding = []
 
-        # 3. Run hybrid search concurrently
+        # 5. Run hybrid search concurrently using merged filters
         vector_task = asyncio.create_task(
             vector_search(
                 query_embedding,
-                filters=processed.metadata_filters,
+                filters=all_filters,
                 limit=_VECTOR_LIMIT,
             )
             if query_embedding
             else _empty_task()
         )
+        # Append strategy-specific BM25 boost terms to expand recall
+        bm25_q = processed.bm25_query
+        if strategy.bm25_boost_terms:
+            bm25_q = bm25_q + " " + " ".join(strategy.bm25_boost_terms)
         bm25_task = asyncio.create_task(
             bm25_search(
-                processed.bm25_query,
-                filters=processed.metadata_filters,
+                bm25_q,
+                filters=all_filters,
                 limit=_BM25_LIMIT,
             )
         )
@@ -137,16 +159,7 @@ class RetrievalEngine:
             bm25_hits=len(bm25_results),
         )
 
-        # 4. Apply tool strategy: boosts + source-type filtering
-        strategy = get_strategy(tool_name)
-        all_results = list(vector_results) + list(bm25_results)
-
-        if strategy.require_source_types:
-            all_results = filter_by_source_types(
-                all_results, strategy.require_source_types
-            )
-
-        # 5. RRF merge
+        # 6. RRF merge
         merged = reciprocal_rank_fusion(
             vector_results,
             bm25_results,
@@ -154,7 +167,10 @@ class RetrievalEngine:
             top_n=_RRF_TOP_N,
         )
 
-        # Apply boosts after merge
+        # Apply source-type filter and boosts after RRF merge
+        if strategy.require_source_types:
+            merged = filter_by_source_types(merged, strategy.require_source_types)
+
         if strategy.source_type_boosts:
             merged = apply_source_type_boosts(merged, strategy.source_type_boosts)
 

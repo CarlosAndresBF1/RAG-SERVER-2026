@@ -46,32 +46,38 @@ class ToolStrategy:
 TOOL_STRATEGIES: dict[str, ToolStrategy] = {
     "find_message_type": ToolStrategy(
         source_type_boosts={
-            "annex_b_spec": 2.0,
-            "xml_example": 1.5,
-            "php_code": 1.2,
+            "annex_b_spec": 4.0,
+            "xml_example": 1.2,
+            "php_code": 1.0,
         },
+        # focus_filters drive source_type pre-filtering at the DB level in engine.py
         focus_filters={
-            "overview": {"subsection_pattern": "overview"},
+            "overview": {"source_type": "annex_b_spec"},
             "fields": {"source_type": "annex_b_spec"},
-            "builder": {"php_symbol_pattern": "build"},
-            "parser": {"php_symbol_pattern": "parse"},
-            "validator": {"php_symbol_pattern": "validat"},
+            "builder": {"source_type": "php_code"},
+            "parser": {"source_type": "php_code"},
+            "validator": {"source_type": "php_code"},
             "examples": {"source_type": "xml_example"},
-            "envelope": {"subsection_pattern": "apphdr"},
+            "envelope": {"source_type": "annex_b_spec"},
         },
     ),
     "find_business_rule": ToolStrategy(
-        source_type_boosts={"annex_b_spec": 3.0},
-        require_source_types=["annex_b_spec"],
+        # Pre-filter DB to annex_b_spec so the cross-encoder sees spec content
+        metadata_filters={"source_type": "annex_b_spec"},
+        source_type_boosts={"annex_b_spec": 1.0},
         bm25_boost_terms=["mandatory", "optional", "conditional", "M", "O", "C", "rule"],
     ),
     "find_module": ToolStrategy(
-        source_type_boosts={"php_code": 3.0, "tech_doc": 1.5},
-        require_source_types=["php_code", "tech_doc"],
+        # Pre-filter DB to php_code only — all MOD questions target implementation code
+        metadata_filters={"source_type": "php_code"},
+        source_type_boosts={"php_code": 1.0},
+        bm25_boost_terms=["class", "function", "method", "builder", "parser", "validator"],
         response_transform="module_map",
     ),
     "find_error": ToolStrategy(
-        source_type_boosts={"annex_b_spec": 2.0, "php_code": 1.5, "tech_doc": 1.0},
+        # Pre-filter to annex_b_spec — 9 of 10 ERR queries expect spec content
+        metadata_filters={"source_type": "annex_b_spec"},
+        source_type_boosts={"annex_b_spec": 1.0},
         bm25_boost_terms=["RJCT", "ACSP", "PDNG", "error", "reject", "reason", "code"],
         response_transform="resolution",
     ),

@@ -65,8 +65,8 @@ async def bm25_search(
         WHERE d.is_current = TRUE
           AND to_tsvector('english', c.content)
                   @@ websearch_to_tsquery('english', :query)
-          AND (:msg_type IS NULL OR cm.message_type = :msg_type)
-          AND (:source_type IS NULL OR d.source_type = :source_type)
+          AND (CAST(:msg_type AS TEXT) IS NULL OR cm.message_type = CAST(:msg_type AS TEXT))
+          AND (CAST(:source_type AS TEXT) IS NULL OR d.source_type = CAST(:source_type AS TEXT))
         ORDER BY score DESC
         LIMIT :limit
         """
