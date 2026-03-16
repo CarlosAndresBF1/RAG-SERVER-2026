@@ -20,9 +20,10 @@ langchain==0.3.25
 langchain-openai==0.3.18
 langchain-anthropic==0.3.15
 langchain-google-genai==2.1.5
+langchain-ollama==0.3.2
 
 # RAG Framework
-llama-index==0.12.35
+# (custom retrieval engine — no llama-index needed)
 
 # MCP Server
 mcp==1.9.4

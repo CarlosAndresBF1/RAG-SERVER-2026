@@ -56,7 +56,15 @@ def create_llm_provider(settings: Settings) -> BaseLLMProvider:
 
         return GeminiLLMProvider(api_key=settings.google_api_key)
 
+    if provider_name == "ollama":
+        from odyssey_rag.llm.ollama_provider import OllamaLLMProvider
+
+        return OllamaLLMProvider(
+            base_url=settings.ollama_base_url,
+            model=settings.ollama_model,
+        )
+
     raise ConfigError(
         f"Unknown LLM_PROVIDER: '{provider_name}'. "
-        "Valid options: openai, anthropic, gemini"
+        "Valid options: openai, anthropic, gemini, ollama"
     )

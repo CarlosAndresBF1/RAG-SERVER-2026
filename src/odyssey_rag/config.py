@@ -24,10 +24,12 @@ class Settings(BaseSettings):
     embedding_dimension: int = 768
 
     # ── LLM ───────────────────────────────────
-    llm_provider: str = "openai"  # openai | anthropic | gemini
+    llm_provider: str = "openai"  # openai | anthropic | gemini | ollama
     openai_api_key: str = ""
     anthropic_api_key: str = ""
     google_api_key: str = ""
+    ollama_base_url: str = "http://host.docker.internal:11434"
+    ollama_model: str = "llama3.1:latest"
 
     # ── MCP ───────────────────────────────────
     mcp_api_key: str = ""

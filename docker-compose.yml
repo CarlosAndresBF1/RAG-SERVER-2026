@@ -48,6 +48,8 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.1:latest}
 
       # Reranker
       RERANKER_ENABLED: ${RERANKER_ENABLED:-true}
@@ -59,6 +61,8 @@ services:
       # App
       LOG_LEVEL: ${LOG_LEVEL:-info}
       ENVIRONMENT: ${ENVIRONMENT:-development}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "${RAG_API_PORT:-8080}:8080"
     volumes:
@@ -101,7 +105,14 @@ services:
       MCP_TRANSPORT: ${MCP_TRANSPORT:-http}
       MCP_PORT: "3000"
 
+      # Ollama
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.1:latest}
+      LLM_PROVIDER: ${LLM_PROVIDER:-openai}
+
       LOG_LEVEL: ${LOG_LEVEL:-info}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "${MCP_PORT:-3000}:3000"
     volumes:
