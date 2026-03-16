@@ -1,8 +1,8 @@
 # Odyssey RAG — MCP Tools Specification
 
-> **Version**: 1.0.0  
-> **Date**: 2026-03-02  
-> **Status**: Planning  
+> **Version**: 1.1.0  
+> **Date**: 2026-03-15  
+> **Status**: Implemented  
 > **Ref**: [ARCHITECTURE.md](ARCHITECTURE.md) §2.1, §3.2
 
 ---
@@ -763,32 +763,32 @@ When an AI agent needs to implement a feature or debug an issue, the recommended
 
 ### `.vscode/mcp.json` (shared in repo)
 
+Uses **streamable HTTP transport** (MCP 2025-03-26 spec):
+
 ```json
 {
   "servers": {
     "oddysey-rag": {
-      "url": "http://localhost:${MCP_PORT:-8081}/mcp",
+      "type": "http",
+      "url": "http://localhost:3010/mcp/",
       "headers": {
-        "Authorization": "Bearer ${input:ODDYSEY_RAG_TOKEN}"
+        "Authorization": "Bearer ${input:mcp_token}"
       }
     }
-  }
+  },
+  "inputs": [
+    {
+      "id": "mcp_token",
+      "type": "promptString",
+      "description": "MCP auth token (from Admin UI → Tokens page)",
+      "password": true
+    }
+  ]
 }
 ```
 
-### stdio mode (local dev, no server needed)
-
-```json
-{
-  "servers": {
-    "oddysey-rag-local": {
-      "command": "python",
-      "args": ["-m", "odyssey_rag.mcp_server", "--transport", "stdio"],
-      "cwd": "${workspaceFolder}/RAG/src",
-      "env": {
-        "DATABASE_URL": "postgresql+asyncpg://rag:rag@localhost:5432/odyssey_rag"
-      }
-    }
-  }
-}
-```
+**Notes**:
+- Transport is `type: "http"` (streamable HTTP, NOT legacy SSE)
+- Endpoint requires trailing slash: `/mcp/`
+- Token is created in the Admin UI at `/tokens`
+- VS Code prompts for the token on first connection

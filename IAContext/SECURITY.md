@@ -1,9 +1,9 @@
 # Odyssey RAG — Security
 
-> **Version**: 1.0.0  
-> **Date**: 2026-03-02  
-> **Status**: Planning  
-> **Ref**: [ARCHITECTURE.md](ARCHITECTURE.md) §9, [DOCKER_SETUP.md](DOCKER_SETUP.md)
+> **Version**: 1.1.0  
+> **Date**: 2026-03-15  
+> **Status**: Implemented  
+> **Ref**: [ARCHITECTURE.md](ARCHITECTURE.md) §9, [DOCKER_SETUP.md](DOCKER_SETUP.md), [UI.md](UI.md) §2
 
 ---
 
@@ -22,7 +22,24 @@
 
 ## 2. Authentication
 
-### 2.1 API Key Auth
+The system has **three authentication layers**:
+
+| Layer | Mechanism | Scope |
+|-------|-----------|-------|
+| **Admin UI** | NextAuth.js (credentials + JWT) | Dashboard access |
+| **RAG API** | `X-API-Key` header | Backend CRUD, search, ingest |
+| **MCP Server** | `Authorization: Bearer <token>` | AI client access to MCP tools |
+
+### 2.1 Admin UI Auth (NextAuth.js v5)
+
+- Provider: Credentials (email + password verified against `admin_user` table)
+- Session: JWT strategy, HttpOnly cookie, 7-day expiry
+- Password: bcrypt hash (cost 12) stored in `admin_user.password_hash`
+- Login: `POST /api/v1/auth/verify` validates credentials server-side
+- Protected routes: middleware redirects unauthenticated users to `/login`
+- Default user: `admin@odyssey.local` / `admin` (seeded via `003_seed_config.sql`)
+
+### 2.2 API Key Auth
 
 ```python
 # api/auth.py

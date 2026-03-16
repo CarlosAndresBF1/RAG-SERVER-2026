@@ -1,8 +1,8 @@
 # Odyssey RAG — Architecture Document
 
-> **Version**: 1.0.0  
-> **Date**: 2026-03-02  
-> **Status**: Planning  
+> **Version**: 1.1.0  
+> **Date**: 2026-03-15  
+> **Status**: Implemented (Phase 1 + 2A–2D)  
 > **Audience**: AI agents (Sonnet/Opus) executing tasks, human reviewers
 
 ---
@@ -97,13 +97,15 @@ The Odyssey RAG is a **self-contained, dockerized knowledge retrieval system** t
 |--------|----------|
 | **Language** | Python 3.11+ |
 | **Framework** | `mcp` Python SDK (official Anthropic SDK) |
-| **Transport** | Dual: `stdio` (local dev) + `HTTP/SSE` (centralized team) |
+| **Transport** | Streamable HTTP (`POST /mcp/`, MCP 2025-03-26 spec) |
 | **Auth** | API key via `Authorization: Bearer` header (HTTP mode) |
 | **Tools exposed** | 6 tools (see [MCP_TOOLS.md](MCP_TOOLS.md)) |
 
-**Dual transport** means:
-- **stdio mode**: Developer runs MCP server locally via `.vscode/mcp.json` → `command: python -m oddysey_rag.mcp_server`
-- **HTTP/SSE mode**: MCP server runs as Docker service, team points to `http://localhost:8081/mcp` (or remote URL)
+**Transport**: Streamable HTTP (MCP 2025-03-26 spec)
+- MCP server runs as Docker service at `POST http://localhost:3010/mcp/`
+- VS Code connects via `type: "http"` in `.vscode/mcp.json`
+- Requires `Accept: application/json, text/event-stream` header (handled automatically by clients)
+- Token auth via `Authorization: Bearer <token>` header
 
 ### 2.2 RAG API (FastAPI)
 
@@ -140,6 +142,18 @@ The Odyssey RAG is a **self-contained, dockerized knowledge retrieval system** t
 | **Persistence** | Docker named volume `rag_pgdata` |
 
 **Why pgvector over dedicated vector DBs**: Already using Postgres in Odyssey ecosystem. Single DB for vectors + metadata + feedback + full-text search. Simpler ops.
+
+### 2.5 Admin Web UI (Next.js)
+
+| Aspect | Decision |
+|--------|----------|
+| **Framework** | Next.js 16 (App Router) + React 19 + TypeScript 5 (strict) |
+| **UI** | Tailwind CSS 4 + shadcn/ui (@base-ui/react) |
+| **Auth** | NextAuth.js v5 (credentials provider, JWT session) |
+| **Port** | 3000 (internal), mapped to WEB_PORT on host (default 3044) |
+| **Design** | "The Clerk" theme — document/archive aesthetic (see [UI.md](UI.md) §1) |
+
+**Pages**: Dashboard, Sources, Ingest, Search, Coverage, Jobs, Feedback, Tokens, Settings, Users, Audit Log.
 
 ---
 
@@ -233,7 +247,7 @@ User Query                     Retrieval Pipeline                      Response
 | **Full-text search** | PostgreSQL `tsvector` + `pg_trgm` | Built-in | BM25-equivalent, no extra service |
 | **Embeddings** | nomic-embed-text v1.5 | 768 dim | Local, free, 8K context, good on code |
 | **Reranker** | Cross-encoder (local) | `ms-marco-MiniLM-L-6-v2` or similar | Improves precision, no API cost |
-| **MCP SDK** | `mcp` (Anthropic official) | Latest | Dual transport (stdio + HTTP/SSE) |
+| **MCP SDK** | `mcp` (Anthropic official) | 1.9.4 | Streamable HTTP transport (MCP 2025-03-26 spec) |
 | **LLM (generation)** | OpenAI GPT-4o (primary) | API | Response generation, summarization |
 | **LLM (alt)** | Claude (Anthropic) | API | Provider-agnostic adapter pattern |
 | **LLM (alt)** | Gemini (Google) | API | Provider-agnostic adapter pattern |
@@ -295,17 +309,33 @@ services:
       - ./data/sources:/app/data/sources  # mount source docs for ingestion
 
   mcp-server:
-    build: ./src
-    command: ["python", "-m", "odyssey_rag.mcp_server", "--transport", "sse"]
-    depends_on: [rag-api]
+    build:
+      context: .
+      target: mcp
+    depends_on: [postgres]
     environment:
-      - RAG_API_URL=http://rag-api:8080
-      - MCP_API_KEY=${MCP_API_KEY}
+      - DATABASE_URL=postgresql+asyncpg://rag_user:${POSTGRES_PASSWORD}@postgres:5432/odyssey_rag
+      - MCP_TRANSPORT=http
     ports:
-      - "${MCP_PORT:-8081}:8081"
+      - "${MCP_PORT:-3010}:3000"
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    depends_on: [rag-api, postgres]
+    environment:
+      - NEXTAUTH_URL=http://localhost:${WEB_PORT:-3044}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - RAG_API_URL=http://rag-api:8080
+      - RAG_INTERNAL_KEY=${RAG_INTERNAL_KEY}
+      - DATABASE_URL=postgresql://rag_user:${POSTGRES_PASSWORD}@postgres:5432/odyssey_rag
+    ports:
+      - "${WEB_PORT:-3044}:3000"
 
 volumes:
-  rag_pgdata:
+  pgdata:
+  rag-models:
 ```
 
 ---
@@ -449,6 +479,29 @@ RAG/
 │       ├── README.md            # Instructions for adding sources
 │       └── .gitkeep
 │
+├── web/                         # Admin UI (Next.js 16)
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── (auth)/login/   # Login page
+│   │   │   ├── (dashboard)/    # Authenticated pages
+│   │   │   │   ├── page.tsx    # Dashboard overview
+│   │   │   │   ├── sources/    # Source browser + detail
+│   │   │   │   ├── ingest/     # File upload & ingestion
+│   │   │   │   ├── search/     # Search playground
+│   │   │   │   ├── coverage/   # Coverage matrix
+│   │   │   │   ├── jobs/       # Jobs history
+│   │   │   │   ├── feedback/   # Feedback dashboard
+│   │   │   │   ├── tokens/     # MCP token manager
+│   │   │   │   ├── settings/   # Health & config
+│   │   │   │   ├── users/      # User management
+│   │   │   │   └── audit/      # Audit log
+│   │   │   └── api/            # Next.js API proxy routes
+│   │   ├── components/         # React components (layout, domain, ui)
+│   │   ├── lib/                # Auth config, API client, utils
+│   │   └── types/              # TypeScript API types
+│   ├── Dockerfile              # Node 22 Alpine, standalone output
+│   └── package.json
+│
 └── scripts/
     ├── seed_initial_sources.py  # Auto-ingest known Odyssey sources
     ├── run_evaluation.py        # Run eval set and report
@@ -531,23 +584,28 @@ New provider = new file in `embeddings/` + config entry. Zero changes to existin
 ## 9. Network & Security Model
 
 ```
-┌───────────────────────────────────────────────┐
-│           Docker Compose Network (rag_net)     │
-│                                               │
-│  postgres:5432 ◄──── rag-api:8080 ◄──── mcp-server:8081
-│       │                    │                   │
-│  (internal only       (internal +          (exposed:
-│   unless debug)        optional expose)     main entry)
-└───────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│              Docker Compose Network (rag-net)                 │
+│                                                              │
+│  postgres:5432 ◄──── rag-api:8080 ◄──── mcp-server:3000    │
+│       │                    ▲                   │             │
+│       │                    │                   │             │
+│       │              web:3000 ────────────────▶│             │
+│       │              (Next.js)                              │
+│  (internal)      (host: 8089)    (host: 3010)  (host: 3044) │
+└──────────────────────────────────────────────────────────────┘
 
 External access:
-  - MCP clients → :8081 (HTTP/SSE + API key)
-  - stdio mode  → direct process invocation (no network)
-  - API debug   → :8080 (optional, disabled in prod)
-  - DB debug    → :5432 (optional, disabled in prod)
+  - Admin UI     → :3044 (Next.js dashboard, NextAuth session)
+  - MCP clients  → :3010 (streamable HTTP + Bearer token)
+  - API debug    → :8089 (optional, X-API-Key header)
+  - DB debug     → :5433 (optional, disabled in prod)
 ```
 
-**Auth**: API key in `MCP_API_KEY` env var. HTTP requests require `Authorization: Bearer <key>`. stdio mode is inherently local (no auth needed).
+**Auth layers**:
+- Admin UI: NextAuth.js credentials (email + bcrypt password)
+- RAG API: `X-API-Key` header (optional in dev mode)
+- MCP Server: `Authorization: Bearer <token>` (tokens managed in Admin UI)
 
 ---
 

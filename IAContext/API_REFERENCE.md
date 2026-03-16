@@ -1,8 +1,8 @@
 # Odyssey RAG — API Reference
 
-> **Version**: 1.0.0  
-> **Date**: 2026-03-02  
-> **Status**: Planning  
+> **Version**: 1.1.0  
+> **Date**: 2026-03-15  
+> **Status**: Implemented  
 > **Ref**: [ARCHITECTURE.md](ARCHITECTURE.md) §3.2, [CONVENTIONS.md](CONVENTIONS.md) §5
 
 ---
@@ -11,7 +11,7 @@
 
 | Setting | Value |
 |---------|-------|
-| Base URL | `http://localhost:8080` |
+| Base URL | `http://localhost:8080` (Docker internal) / `http://localhost:8089` (host) |
 | API Prefix | `/api/v1` |
 | Docs | `http://localhost:8080/docs` (Swagger UI) |
 | ReDoc | `http://localhost:8080/redoc` |
@@ -345,6 +345,152 @@ POST /api/v1/feedback
 | `chunk_id` | integer | yes | The chunk being rated |
 | `rating` | integer | yes | -1 (bad), 0 (neutral), 1 (good) |
 | `comment` | string | no | Free-text feedback |
+
+---
+
+### 2.10 Stats — Feedback (Expanded)
+
+```
+GET /api/v1/stats/feedback
+```
+
+**Query Parameters**:
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `page` | integer | 1 | Page for per-query rows |
+| `page_size` | integer | 20 | Rows per page |
+
+**Response** `200 OK`:
+```json
+{
+  "total_feedback": 89,
+  "positive_pct": 76.4,
+  "negative_pct": 15.7,
+  "neutral_pct": 7.9,
+  "trend": [
+    {"date": "2026-03-14", "count": 12, "avg_rating": 0.67}
+  ],
+  "rows": [
+    {"query": "pacs.008 fields", "rating": 1, "tool_name": "find_message_type", "created_at": "...", "chunk_count": 5}
+  ],
+  "page": 1,
+  "page_size": 20
+}
+```
+
+---
+
+### 2.11 Stats — Database
+
+```
+GET /api/v1/stats/db
+```
+
+**Response** `200 OK`:
+```json
+{
+  "database_size": "22 MB",
+  "row_counts": {"document": 137, "chunk": 1255, "feedback": 89},
+  "table_sizes": {"chunk": "15 MB", "document": "2 MB"}
+}
+```
+
+---
+
+### 2.12 Jobs List
+
+```
+GET /api/v1/jobs
+```
+
+**Query Parameters**:
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `page` | integer | 1 | Page number |
+| `page_size` | integer | 20 | Items per page |
+| `status` | string | null | Filter: `pending`, `running`, `completed`, `failed` |
+
+---
+
+### 2.13 Admin Users
+
+```
+GET /api/v1/admin/users
+POST /api/v1/admin/users
+DELETE /api/v1/admin/users/{id}
+```
+
+**POST Body**:
+```json
+{
+  "email": "dev@odyssey.local",
+  "password": "securepass",
+  "display_name": "Developer",
+  "role": "admin"
+}
+```
+
+---
+
+### 2.14 Audit Log
+
+```
+GET /api/v1/audit
+```
+
+**Query Parameters**:
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `page` | integer | 1 | Page number |
+| `page_size` | integer | 50 | Items per page |
+| `action` | string | null | Filter by action type |
+
+---
+
+### 2.15 Auth Verify
+
+```
+POST /api/v1/auth/verify
+```
+
+**Request Body**:
+```json
+{
+  "email": "admin@odyssey.local",
+  "password": "admin"
+}
+```
+
+**Response** `200 OK`:
+```json
+{
+  "id": "uuid",
+  "email": "admin@odyssey.local",
+  "display_name": "Admin",
+  "role": "admin"
+}
+```
+
+---
+
+### 2.16 MCP Tokens
+
+```
+GET /api/v1/tokens
+POST /api/v1/tokens
+DELETE /api/v1/tokens/{id}
+GET /api/v1/tokens/{id}/audit
+```
+
+---
+
+### 2.17 File Upload
+
+```
+POST /api/v1/upload
+```
+
+Multipart file upload. File is saved to `data/sources/` and can be ingested.
 
 ---
 

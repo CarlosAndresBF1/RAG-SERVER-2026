@@ -834,7 +834,7 @@ PHASE 2D — Wiring & Enrichment
 [x] 2D.23  Export: download search results / feedback / coverage as CSV
 [ ] 2D.24  Dashboard: real-time WebSocket updates — DEFERRED (requires SSE/WS infrastructure)
 [x] MCP transport: upgraded from legacy SSE to streamable HTTP (MCP 2025-03-26 spec)
-[ ] UPDATE test, readme, documentation, run audit fix
+[x] UPDATE test, readme, documentation, run audit fix
 ```
 
 ---

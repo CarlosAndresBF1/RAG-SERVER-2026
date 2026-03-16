@@ -15,6 +15,17 @@ The Clerk-themed admin UI for Oddysey RAG. Built with **Next.js 16**, **React 19
 
 ## Getting Started
 
+### Docker (recommended)
+
+```bash
+# From the project root
+docker compose up -d web
+
+# Opens at http://localhost:3044
+```
+
+### Local development
+
 ```bash
 # Install dependencies
 npm install
@@ -23,7 +34,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000 — you'll be redirected to the login page.
+Open http://localhost:3044 — you'll be redirected to the login page.
 
 **Default credentials** (seeded via `003_seed_config.sql`):
 - Email: `admin@odyssey.local`
@@ -39,12 +50,14 @@ src/
 │   │   ├── page.tsx        # Overview dashboard
 │   │   ├── sources/        # Source browser + detail
 │   │   ├── ingest/         # File upload & ingestion
-│   │   ├── search/         # Search playground
-│   │   ├── coverage/       # Coverage matrix
-│   │   ├── jobs/           # Jobs history
-│   │   ├── feedback/       # Feedback dashboard
+│   │   ├── search/         # Search playground + feedback
+│   │   ├── coverage/       # Coverage matrix + drill-down
+│   │   ├── jobs/           # Jobs history + filters
+│   │   ├── feedback/       # Feedback dashboard + trends
 │   │   ├── tokens/         # MCP token manager
-│   │   └── settings/       # Health & config
+│   │   ├── settings/       # Health, DB stats, config
+│   │   ├── users/          # Admin user management
+│   │   └── audit/          # Audit log viewer
 │   └── api/                # API proxy routes
 ├── components/
 │   ├── layout/             # Sidebar, Topbar
@@ -65,6 +78,12 @@ src/
 - **MCP token management** with SHA-256 client-side hashing
 - **Drag & drop file upload** with automatic source type detection
 
+- **Toast notifications** via Sonner for all async actions
+- **CSV export** on sources, feedback, and coverage tables
+- **Bulk operations** multi-select delete on sources
+- **User management** for admin users
+- **Audit log** with action filters
+
 ## Scripts
 
 ```bash
@@ -80,5 +99,5 @@ npx playwright test  # E2E tests
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `NEXTAUTH_SECRET` | (required) | Session encryption key |
-| `NEXTAUTH_URL` | `http://localhost:3000` | Auth callback base URL |
+| `NEXTAUTH_URL` | `http://localhost:3044` | Auth callback base URL |
 | `RAG_API_URL` | `http://localhost:8089` | Backend API base URL |

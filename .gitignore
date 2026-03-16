@@ -49,6 +49,11 @@ data/sources/*
 !data/sources/README.md
 !data/sources/.gitkeep
 
+# ── Node / Frontend ───────────────────────
+node_modules/
+.next/
+out/
+
 # ── Misc ──────────────────────────────────
 *.log
 tmp/
