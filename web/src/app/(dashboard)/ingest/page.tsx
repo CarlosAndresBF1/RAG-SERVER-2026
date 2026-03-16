@@ -1,0 +1,215 @@
+"use client";
+
+import { useState, useCallback } from "react";
+import { useDropzone } from "react-dropzone";
+import { Upload, FileText, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+
+interface FileEntry {
+  file: File;
+  status: "pending" | "uploading" | "ingesting" | "completed" | "failed";
+  sourceType?: string;
+  result?: { chunks_created?: number | null; error?: string | null; document_id?: string | null };
+}
+
+const ACCEPTED_TYPES: Record<string, string[]> = {
+  "text/markdown": [".md"],
+  "text/plain": [".txt", ".rst"],
+  "application/xml": [".xml"],
+  "application/json": [".json"],
+  "application/pdf": [".pdf"],
+  "application/x-httpd-php": [".php"],
+};
+
+function detectSourceType(name: string): string {
+  if (/IPS_Annex_B/i.test(name)) return "annex_b_spec";
+  if (/BIMPAY_(TECHNICAL|INFRASTRUCTURE)/i.test(name)) return "tech_doc";
+  if (/\.php$/i.test(name)) return "php_code";
+  if (/\.xml$/i.test(name)) return "xml_example";
+  if (/\.postman_collection\.json$/i.test(name)) return "postman_collection";
+  return "generic_text";
+}
+
+export default function IngestPage() {
+  const [files, setFiles] = useState<FileEntry[]>([]);
+  const [replaceExisting, setReplaceExisting] = useState(false);
+  const [processing, setProcessing] = useState(false);
+
+  const onDrop = useCallback((accepted: File[]) => {
+    const entries: FileEntry[] = accepted.map((file) => ({
+      file,
+      status: "pending",
+      sourceType: detectSourceType(file.name),
+    }));
+    setFiles((prev) => [...prev, ...entries]);
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: ACCEPTED_TYPES,
+    maxSize: 50 * 1024 * 1024,
+    disabled: processing,
+  });
+
+  const removeFile = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const processAll = async () => {
+    setProcessing(true);
+
+    for (let i = 0; i < files.length; i++) {
+      const entry = files[i];
+      if (entry.status !== "pending") continue;
+
+      // Upload
+      setFiles((prev) =>
+        prev.map((f, idx) => (idx === i ? { ...f, status: "uploading" } : f))
+      );
+
+      try {
+        const formData = new FormData();
+        formData.append("file", entry.file);
+        const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+        if (!uploadRes.ok) throw new Error(await uploadRes.text());
+        const { path } = await uploadRes.json();
+
+        // Ingest
+        setFiles((prev) =>
+          prev.map((f, idx) => (idx === i ? { ...f, status: "ingesting" } : f))
+        );
+
+        const ingestRes = await fetch("/api/ingest", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            source_path: path,
+            source_type: entry.sourceType,
+            replace_existing: replaceExisting,
+          }),
+        });
+        if (!ingestRes.ok) throw new Error(await ingestRes.text());
+        const result = await ingestRes.json();
+
+        setFiles((prev) =>
+          prev.map((f, idx) =>
+            idx === i ? { ...f, status: result.status === "failed" ? "failed" : "completed", result } : f
+          )
+        );
+      } catch (err) {
+        setFiles((prev) =>
+          prev.map((f, idx) =>
+            idx === i ? { ...f, status: "failed", result: { error: String(err) } } : f
+          )
+        );
+      }
+    }
+
+    setProcessing(false);
+  };
+
+  const pendingCount = files.filter((f) => f.status === "pending").length;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-2">
+        <h2 className="text-3xl font-serif text-primary tracking-tight">Ingest Sources</h2>
+        <p className="text-muted-foreground text-sm">Upload and ingest documents into the knowledge base</p>
+      </div>
+
+      {/* Dropzone */}
+      <div
+        {...getRootProps()}
+        className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-colors ${
+          isDragActive ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+        } ${processing ? "opacity-50 pointer-events-none" : ""}`}
+      >
+        <input {...getInputProps()} />
+        <Upload className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+        <p className="text-sm text-muted-foreground">
+          {isDragActive
+            ? "Drop files here…"
+            : "Drag & drop files here, or click to browse"}
+        </p>
+        <p className="text-xs text-muted-foreground mt-1">
+          .md, .php, .xml, .json, .pdf, .txt, .rst — max 50 MB
+        </p>
+      </div>
+
+      {/* File list */}
+      {files.length > 0 && (
+        <div className="border border-border/50 bg-card rounded-md shadow-sm">
+          <div className="px-4 py-3 border-b border-border/50 flex items-center justify-between">
+            <h3 className="font-serif text-lg text-primary">Files ({files.length})</h3>
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={replaceExisting}
+                  onChange={(e) => setReplaceExisting(e.target.checked)}
+                  disabled={processing}
+                  className="rounded border-border"
+                />
+                Replace existing
+              </label>
+              <Button
+                onClick={processAll}
+                disabled={processing || pendingCount === 0}
+                size="sm"
+              >
+                {processing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                    Processing…
+                  </>
+                ) : (
+                  `Ingest ${pendingCount} file${pendingCount !== 1 ? "s" : ""}`
+                )}
+              </Button>
+            </div>
+          </div>
+          <div className="divide-y divide-border/30">
+            {files.map((entry, i) => (
+              <div key={i} className="px-4 py-3 flex items-center gap-3">
+                <StatusIcon status={entry.status} />
+                <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{entry.file.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {(entry.file.size / 1024).toFixed(1)} KB
+                    {entry.result?.chunks_created != null && ` · ${entry.result.chunks_created} chunks created`}
+                    {entry.result?.error && ` · ${entry.result.error}`}
+                  </p>
+                </div>
+                <Badge variant="outline">{entry.sourceType?.replace(/_/g, " ")}</Badge>
+                {entry.status === "pending" && !processing && (
+                  <button
+                    onClick={() => removeFile(i)}
+                    className="text-muted-foreground hover:text-destructive text-sm"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StatusIcon({ status }: { status: FileEntry["status"] }) {
+  switch (status) {
+    case "completed":
+      return <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />;
+    case "failed":
+      return <XCircle className="h-4 w-4 text-destructive flex-shrink-0" />;
+    case "uploading":
+    case "ingesting":
+      return <Loader2 className="h-4 w-4 text-secondary animate-spin flex-shrink-0" />;
+    default:
+      return <div className="h-4 w-4 rounded-full border-2 border-border flex-shrink-0" />;
+  }
+}
