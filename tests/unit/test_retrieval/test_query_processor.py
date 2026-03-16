@@ -67,10 +67,11 @@ class TestQueryProcessor:
 
     # ── BM25 query expansion ───────────────────────────────────────────────
 
-    def test_bm25_query_includes_expansions(self) -> None:
-        """BM25 query expands known abbreviations."""
+    def test_bm25_query_keeps_original_terms(self) -> None:
+        """BM25 query uses original terms without expansion (AND semantics)."""
         q = self.processor.process("What is the BIC field?")
-        assert "Business Identifier Code" in q.bm25_query
+        assert "bic" in q.bm25_query
+        assert q.bm25_query == q.normalized
 
     def test_bm25_query_includes_message_type(self) -> None:
         """BM25 query includes message type when not already in the text."""

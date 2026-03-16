@@ -17,7 +17,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from odyssey_rag.api.errors import http_exception_handler, validation_exception_handler
-from odyssey_rag.api.routes import chunks, feedback, ingest, search, sources
+from odyssey_rag.api.routes import chunks, feedback, ingest, search, sources, stats, jobs, auth, tokens, upload, admin, audit
 from odyssey_rag.config import get_settings
 from odyssey_rag.db.session import close_engine, get_engine
 
@@ -59,6 +59,13 @@ def create_app() -> FastAPI:
     app.include_router(sources.router, prefix="/api/v1", tags=["sources"])
     app.include_router(chunks.router, prefix="/api/v1", tags=["chunks"])
     app.include_router(feedback.router, prefix="/api/v1", tags=["feedback"])
+    app.include_router(stats.router, prefix="/api/v1")
+    app.include_router(jobs.router, prefix="/api/v1")
+    app.include_router(auth.router, prefix="/api/v1")
+    app.include_router(tokens.router, prefix="/api/v1")
+    app.include_router(upload.router, prefix="/api/v1")
+    app.include_router(admin.router, prefix="/api/v1")
+    app.include_router(audit.router, prefix="/api/v1")
 
     # ── Health endpoint ───────────────────────────────────────────────────────
 

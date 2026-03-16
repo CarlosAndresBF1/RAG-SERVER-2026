@@ -67,7 +67,7 @@ services:
       - "${RAG_API_PORT:-8080}:8080"
     volumes:
       - rag-models:/app/models          # Cached model weights
-      - ./data/sources:/app/sources:ro  # Source documents (read-only)
+      - ./data/sources:/app/sources    # Source documents (rw for uploads)
     healthcheck:
       test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8080/health').raise_for_status()"]
       interval: 10s
@@ -117,6 +117,29 @@ services:
       - "${MCP_PORT:-3000}:3000"
     volumes:
       - rag-models:/app/models          # Share cached model weights with api
+    networks:
+      - rag-net
+
+  # ─── Admin Web UI ──────────────────────────────────────
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: odyssey-rag-web
+    restart: unless-stopped
+    depends_on:
+      rag-api:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      NEXTAUTH_URL: http://localhost:${WEB_PORT:-3001}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      RAG_API_URL: http://rag-api:8080
+      RAG_INTERNAL_KEY: ${RAG_INTERNAL_KEY}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-rag_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-odyssey_rag}
+    ports:
+      - "${WEB_PORT:-3001}:3000"
     networks:
       - rag-net
 

@@ -1,8 +1,19 @@
 {
   "servers": {
     "oddysey-rag": {
-      "type": "sse",
-      "url": "http://localhost:3010/sse"
+      "type": "http",
+      "url": "http://localhost:3010/mcp/",
+      "headers": {
+        "Authorization": "Bearer ${input:mcp_token}"
+      }
     }
-  }
+  },
+  "inputs": [
+    {
+      "id": "mcp_token",
+      "type": "promptString",
+      "description": "MCP API token (generate one in Admin UI → Tokens)",
+      "password": true
+    }
+  ]
 }

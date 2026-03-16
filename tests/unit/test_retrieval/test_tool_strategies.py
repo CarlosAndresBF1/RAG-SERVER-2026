@@ -52,15 +52,15 @@ class TestGetStrategy:
         }
         assert expected_tools.issubset(set(TOOL_STRATEGIES.keys()))
 
-    def test_find_business_rule_requires_annex_b(self) -> None:
-        """find_business_rule requires annex_b_spec source type."""
+    def test_find_business_rule_filters_annex_b(self) -> None:
+        """find_business_rule pre-filters to annex_b_spec via metadata_filters."""
         s = get_strategy("find_business_rule")
-        assert "annex_b_spec" in s.require_source_types
+        assert s.metadata_filters.get("source_type") == "annex_b_spec"
 
-    def test_find_module_requires_php_code(self) -> None:
-        """find_module requires php_code source type."""
+    def test_find_module_filters_php_code(self) -> None:
+        """find_module pre-filters to php_code via metadata_filters."""
         s = get_strategy("find_module")
-        assert "php_code" in s.require_source_types
+        assert s.metadata_filters.get("source_type") == "php_code"
 
     def test_find_message_type_has_boosts(self) -> None:
         """find_message_type strategy has source type boosts."""

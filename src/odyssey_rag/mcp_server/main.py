@@ -69,9 +69,15 @@ def main(argv: list[str] | None = None) -> None:
         mcp.run(transport="stdio")
     else:
         import uvicorn
+        from odyssey_rag.mcp_server.auth_middleware import McpTokenAuthMiddleware
 
         logger.info("mcp_server.http_start", host=args.host, port=args.port)
-        uvicorn.run(mcp.sse_app(), host=args.host, port=args.port, log_level="info")
+
+        # Use streamable HTTP transport (MCP 2025-03-26 spec)
+        # Endpoint: POST /mcp
+        app = mcp.streamable_http_app()
+        app.add_middleware(McpTokenAuthMiddleware)
+        uvicorn.run(app, host=args.host, port=args.port, log_level="info")
 
 
 if __name__ == "__main__":

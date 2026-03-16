@@ -1,5 +1,12 @@
 {
     "chat.tools.terminal.autoApprove": {
-        "ollama": true
+        "ollama": true,
+        "npx tsc": true,
+        "npm audit": true,
+        "/^node -v && npm -v 2>&1$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "mkdir": true
     }
 }
