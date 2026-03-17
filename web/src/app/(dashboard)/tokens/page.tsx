@@ -22,6 +22,8 @@ export default function TokensPage() {
   const [revealedToken, setRevealedToken] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [auditLog, setAuditLog] = useState<{ tokenId: string; entries: TokenAuditEntry[] } | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   // New token form state
   const [newName, setNewName] = useState("");
@@ -47,14 +49,13 @@ export default function TokensPage() {
   const createToken = async () => {
     if (!newName.trim()) return;
     setCreating(true);
+    setCreateError(null);
 
     // Generate token client-side, hash it, send hash to server
     const rawToken = `odr_${generateRandomString(48)}`;
     const hash = await sha256(rawToken);
     const prefix = rawToken.slice(0, 12);
 
-    // We need the admin user ID — for now use a placeholder
-    // In production this comes from the session
     try {
       const res = await fetch("/api/tokens", {
         method: "POST",
@@ -70,13 +71,19 @@ export default function TokensPage() {
       });
 
       if (res.ok) {
+        setDialogOpen(false);
         setRevealedToken(rawToken);
         setNewName("");
         setNewScopes(["read"]);
         setNewExpiry("");
         setNewRateLimit(60);
         await fetchTokens();
+      } else {
+        const err = await res.json().catch(() => null);
+        setCreateError(err?.detail ?? `Error creating token (${res.status})`);
       }
+    } catch {
+      setCreateError("Network error — could not reach the server");
     } finally {
       setCreating(false);
     }
@@ -121,7 +128,7 @@ export default function TokensPage() {
           <h2 className="text-3xl font-serif text-primary tracking-tight">MCP Tokens</h2>
           <p className="text-muted-foreground text-sm">Manage access tokens for MCP clients</p>
         </div>
-        <Dialog>
+        <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) setCreateError(null); }}>
           <DialogTrigger render={<span />} nativeButton={false}>
             <Button>
               <Plus className="h-4 w-4 mr-1" /> New Token
@@ -181,6 +188,9 @@ export default function TokensPage() {
                   />
                 </div>
               </div>
+              {createError && (
+                <p className="text-sm text-destructive">{createError}</p>
+              )}
               <Button onClick={createToken} disabled={creating || !newName.trim()} className="w-full">
                 {creating ? "Creating…" : "Generate Token"}
               </Button>

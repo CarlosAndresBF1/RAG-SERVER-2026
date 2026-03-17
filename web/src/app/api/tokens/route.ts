@@ -22,12 +22,19 @@ export async function POST(req: NextRequest) {
   // Inject the admin user ID from the session
   body.issued_by = session?.user?.id ?? body.issued_by ?? "00000000-0000-0000-0000-000000000000";
 
-  const res = await fetch(`${RAG_API_URL}/api/v1/tokens`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-  });
+  try {
+    const res = await fetch(`${RAG_API_URL}/api/v1/tokens`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    });
 
-  const data = await res.json();
-  return NextResponse.json(data, { status: res.status });
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  } catch {
+    return NextResponse.json(
+      { detail: "Could not connect to the RAG API" },
+      { status: 502 },
+    );
+  }
 }

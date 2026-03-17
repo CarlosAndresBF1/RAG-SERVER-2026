@@ -107,6 +107,9 @@ async def create_token(
     db.add(McpTokenAudit(token_id=token.id, action="created"))
     await db.flush()
 
+    # Refresh to load server-generated defaults (created_at, etc.)
+    await db.refresh(token)
+
     return _token_to_response(token)
 
 
