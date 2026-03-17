@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 
 const RAG_API_URL = process.env.RAG_API_URL || "http://localhost:8080";
 const RAG_API_KEY = process.env.RAG_INTERNAL_KEY || "dev-key";
@@ -16,11 +15,10 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
   const body = await req.json();
 
-  // Inject the admin user ID from the session
-  body.issued_by = session?.user?.id ?? body.issued_by ?? "00000000-0000-0000-0000-000000000000";
+  // issued_by is resolved server-side by the backend if not provided
+  // The middleware already ensures the user is authenticated
 
   try {
     const res = await fetch(`${RAG_API_URL}/api/v1/tokens`, {

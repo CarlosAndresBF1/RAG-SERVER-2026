@@ -137,6 +137,7 @@ services:
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
       RAG_API_URL: http://rag-api:8080
       RAG_INTERNAL_KEY: ${RAG_INTERNAL_KEY}
+      AUTH_TRUST_HOST: "true"
       DATABASE_URL: postgresql://${POSTGRES_USER:-rag_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-odyssey_rag}
     ports:
       - "${WEB_PORT:-3001}:3000"

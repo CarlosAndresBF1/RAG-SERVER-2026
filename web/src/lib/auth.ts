@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import { ragFetch } from "@/lib/api-client";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  trustHost: true,
   providers: [
     Credentials({
       credentials: {

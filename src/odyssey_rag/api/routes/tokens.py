@@ -18,7 +18,7 @@ from sqlalchemy import desc, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from odyssey_rag.api.deps import get_async_session
-from odyssey_rag.db.models import McpToken, McpTokenAudit
+from odyssey_rag.db.models import AdminUser, McpToken, McpTokenAudit
 
 router = APIRouter(prefix="/tokens", tags=["tokens"])
 
@@ -30,7 +30,7 @@ class CreateTokenRequest(BaseModel):
     name: str
     token_hash: str
     token_prefix: str
-    issued_by: str  # admin_user UUID
+    issued_by: Optional[str] = None  # admin_user UUID (resolved server-side if absent)
     scopes: list[str] = ["read"]
     expires_at: Optional[str] = None  # ISO 8601 or None
     rate_limit_rpm: int = 60
@@ -91,11 +91,23 @@ async def create_token(
         datetime.fromisoformat(body.expires_at) if body.expires_at else None
     )
 
+    # Resolve issued_by: use provided UUID or fall back to first active admin
+    if body.issued_by:
+        issuer_id = uuid_mod.UUID(body.issued_by)
+    else:
+        result = await db.execute(
+            select(AdminUser.id).where(AdminUser.is_active == True).limit(1)
+        )
+        admin_id = result.scalar_one_or_none()
+        if not admin_id:
+            raise HTTPException(status_code=400, detail="No active admin user found")
+        issuer_id = admin_id
+
     token = McpToken(
         name=body.name,
         token_hash=body.token_hash,
         token_prefix=body.token_prefix,
-        issued_by=uuid_mod.UUID(body.issued_by),
+        issued_by=issuer_id,
         scopes=body.scopes,
         expires_at=expires,
         rate_limit_rpm=body.rate_limit_rpm,
