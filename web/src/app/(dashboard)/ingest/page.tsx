@@ -20,6 +20,8 @@ const ACCEPTED_TYPES: Record<string, string[]> = {
   "application/json": [".json"],
   "application/pdf": [".pdf"],
   "application/x-httpd-php": [".php"],
+  "application/msword": [".doc"],
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
 };
 
 function detectSourceType(name: string): string {
@@ -28,6 +30,7 @@ function detectSourceType(name: string): string {
   if (/\.php$/i.test(name)) return "php_code";
   if (/\.xml$/i.test(name)) return "xml_example";
   if (/\.postman_collection\.json$/i.test(name)) return "postman_collection";
+  if (/\.docx?$/i.test(name)) return "word_doc";
   return "generic_text";
 }
 
@@ -133,7 +136,7 @@ export default function IngestPage() {
             : "Drag & drop files here, or click to browse"}
         </p>
         <p className="text-xs text-muted-foreground mt-1">
-          .md, .php, .xml, .json, .pdf, .txt, .rst — max 50 MB
+          .md, .php, .xml, .json, .pdf, .txt, .rst, .doc, .docx — max 50 MB
         </p>
       </div>
 
