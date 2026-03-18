@@ -1,6 +1,6 @@
 # Odyssey RAG
 
-Self-contained knowledge retrieval system for the Odyssey project — indexes ISO 20022/IPS Annex B specs, PHP source code, XML examples, and technical documentation. Exposes knowledge via an **MCP server** (for VS Code / AI clients) and an **Admin UI** (for management).
+Self-contained knowledge retrieval system for the Odyssey project — indexes ISO 20022/IPS Annex B specs, PHP source code, XML examples, Word documents (.doc/.docx), and technical documentation. Exposes knowledge via an **MCP server** (for VS Code / AI clients) and an **Admin UI** (for management).
 
 ## Architecture
 
@@ -74,6 +74,8 @@ open http://localhost:3044
 - **cross-encoder/ms-marco-MiniLM-L-6-v2** — reranker
 - **MCP SDK** 1.9.4 — Model Context Protocol server
 - **LLM providers**: OpenAI, Anthropic, Google, Ollama (configurable)
+- **python-docx** — Word document (.docx) parsing
+- **antiword** — Legacy Word (.doc) text extraction
 
 ### Frontend (Node.js 22)
 - **Next.js** 16 (App Router) + **React** 19 + **TypeScript** 5 (strict)
@@ -109,7 +111,7 @@ RAG/
 │   ├── src/components/        #   React components
 │   └── src/lib/               #   Auth, API client, utils
 ├── db/                        # PostgreSQL schema + migrations
-├── tests/                     # Backend tests (196 unit tests)
+├── tests/                     # Backend tests (204 unit tests)
 ├── data/sources/              # Source documents for ingestion
 ├── IAContext/                  # Architecture & planning docs
 ├── docker-compose.yml         # Full stack orchestration

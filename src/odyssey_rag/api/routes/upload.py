@@ -18,7 +18,7 @@ router = APIRouter(tags=["upload"])
 
 SOURCES_DIR = Path(os.environ.get("SOURCES_DIR", "/app/sources"))
 
-ALLOWED_EXTENSIONS = {".md", ".php", ".xml", ".json", ".pdf", ".txt", ".rst"}
+ALLOWED_EXTENSIONS = {".md", ".php", ".xml", ".json", ".pdf", ".txt", ".rst", ".doc", ".docx"}
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
 
 # Only allow safe filenames — alphanumeric, hyphens, underscores, dots

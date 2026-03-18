@@ -47,6 +47,7 @@ from odyssey_rag.ingestion.parsers.base import ParsedSection
 from odyssey_rag.ingestion.parsers.markdown import MarkdownParser
 from odyssey_rag.ingestion.parsers.php_code import PhpCodeParser
 from odyssey_rag.ingestion.parsers.postman import PostmanParser
+from odyssey_rag.ingestion.parsers.docx import DocxParser
 from odyssey_rag.ingestion.parsers.xml_example import XmlExampleParser
 
 logger = structlog.get_logger(__name__)
@@ -61,6 +62,7 @@ SOURCE_TYPE_RULES: list[tuple[str, str]] = [
     (r"\.xml$", "xml_example"),
     (r"\.postman_collection\.json$", "postman_collection"),
     (r"\.pdf$", "pdf_doc"),
+    (r"\.docx?$", "word_doc"),
     (r"\.(md|txt|rst)$", "generic_text"),
 ]
 
@@ -136,6 +138,8 @@ def _get_parser(source_type: str):
         return XmlExampleParser()
     if source_type == "postman_collection":
         return PostmanParser()
+    if source_type == "word_doc":
+        return DocxParser()
     # Fallback
     return MarkdownParser()
 
@@ -150,7 +154,7 @@ def _get_chunker(source_type: str):
         return MarkdownChunker(max_tokens=max_tokens, overlap_tokens=overlap)
     if source_type == "php_code":
         return PhpCodeChunker(max_tokens=max_tokens, overlap_tokens=overlap)
-    if source_type in ("xml_example", "postman_collection"):
+    if source_type in ("xml_example", "postman_collection", "word_doc"):
         return SemanticChunker(max_tokens=max_tokens, overlap_tokens=overlap)
     return SemanticChunker(max_tokens=max_tokens, overlap_tokens=overlap)
 

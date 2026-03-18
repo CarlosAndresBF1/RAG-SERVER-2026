@@ -72,6 +72,7 @@ SOURCE_TYPE_RULES = [
     (r"\.xml$",                             "xml_example"),
     (r"\.postman_collection\.json$",        "postman_collection"),
     (r"\.pdf$",                             "pdf_doc"),
+    (r"\.docx?$",                            "word_doc"),
     (r"\.(md|txt|rst)$",                    "generic_text"),
 ]
 
@@ -235,7 +236,52 @@ class XmlExampleParser(BaseParser):
     """
 ```
 
-### 3.5 PdfParser (`pdf_doc`) — Future
+### 3.5 DocxParser (`word_doc`)
+
+```python
+# ingestion/parsers/docx.py
+class DocxParser(BaseParser):
+    """Parse Word documents (.doc / .docx) into heading-delimited sections.
+    
+    .docx strategy (python-docx):
+    1. Iterate paragraphs detecting heading styles (Heading 1–3, Title)
+    2. Group body paragraphs under their heading context
+    3. Heading 1 / Title → section, Heading 2/3 → subsection
+    4. Extract tables as Markdown-formatted rows with | separators
+    5. Table content is appended as separate sections with subsection="Table"
+    
+    .doc strategy (legacy binary):
+    1. Try antiword CLI tool for text extraction
+    2. Fallback: raw byte decoding with printable-text filtering
+    3. Entire document → single section (no heading structure)
+    
+    Dependencies: python-docx, antiword (system package for .doc)
+    Chunker: SemanticChunker (paragraph-aware splitting)
+    """
+```
+
+**Output example** for a structured .docx:
+```python
+[
+    ParsedSection(
+        content="This is the introduction paragraph...",
+        section="Document Title",
+        subsection=None,
+    ),
+    ParsedSection(
+        content="Detailed content under section one...",
+        section="Document Title",
+        subsection="Section One",
+    ),
+    ParsedSection(
+        content="| Field | Type | Description |\n| --- | --- | --- |\n| MsgId | string | ...",
+        section="Document Title",
+        subsection="Table",
+    ),
+]
+```
+
+### 3.6 PdfParser (`pdf_doc`) — Future
 
 ```python
 # ingestion/parsers/pdf.py
@@ -254,7 +300,7 @@ class PdfParser(BaseParser):
     """
 ```
 
-### 3.6 PostmanParser (`postman_collection`)
+### 3.7 PostmanParser (`postman_collection`)
 
 ```python
 # ingestion/parsers/postman.py
@@ -556,6 +602,7 @@ INITIAL_SOURCES = [
 |-------|----------|
 | File not found | `IngestResult(status="failed", error="File not found: ...")` |
 | Unsupported file type | Fall back to `generic_text` parser |
+| .doc without antiword | Fallback to raw text extraction |
 | Parse error (corrupt PDF, invalid XML) | Log error, record in `ingest_job`, skip file |
 | Embedding service unavailable | Retry 3× with exponential backoff, then fail job |
 | Database write failure | Rollback transaction, fail job |
