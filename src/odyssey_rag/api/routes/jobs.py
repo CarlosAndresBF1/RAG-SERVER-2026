@@ -45,6 +45,68 @@ async def get_job(
     return _serialize_job(job)
 
 
+@router.post("/{job_id}/cancel")
+async def cancel_job(
+    job_id: str,
+    db: AsyncSession = Depends(get_async_session),
+) -> Dict[str, Any]:
+    """Cancel a pending or running ingest job."""
+    import uuid as _uuid
+    try:
+        uid = _uuid.UUID(job_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid job ID")
+
+    result = await db.execute(select(IngestJob).where(IngestJob.id == uid))
+    job = result.scalar_one_or_none()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job.status not in ("pending", "running"):
+        raise HTTPException(
+            status_code=409,
+            detail=f"Cannot cancel job with status '{job.status}'",
+        )
+
+    from odyssey_rag.db.repositories.ingest_jobs import IngestJobRepository
+    repo = IngestJobRepository(db)
+    await repo.mark_cancelled(uid)
+    await db.commit()
+
+    # Re-fetch to return updated state
+    result2 = await db.execute(select(IngestJob).where(IngestJob.id == uid))
+    updated = result2.scalar_one()
+    return _serialize_job(updated)
+
+
+@router.delete("/{job_id}")
+async def delete_job(
+    job_id: str,
+    db: AsyncSession = Depends(get_async_session),
+) -> Dict[str, Any]:
+    """Delete a finished job record (completed, failed, or cancelled)."""
+    import uuid as _uuid
+    try:
+        uid = _uuid.UUID(job_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid job ID")
+
+    result = await db.execute(select(IngestJob).where(IngestJob.id == uid))
+    job = result.scalar_one_or_none()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job.status in ("pending", "running"):
+        raise HTTPException(
+            status_code=409,
+            detail="Cannot delete an active job. Cancel it first.",
+        )
+
+    from odyssey_rag.db.repositories.ingest_jobs import IngestJobRepository
+    repo = IngestJobRepository(db)
+    await repo.delete_job(uid)
+    await db.commit()
+    return {"deleted": True, "id": job_id}
+
+
 @router.get("")
 async def list_jobs(
     limit: int = 50,

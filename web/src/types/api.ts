@@ -110,7 +110,7 @@ export interface IngestJob {
   id: string;
   source_path: string;
   source_type: string;
-  status: "pending" | "running" | "completed" | "failed";
+  status: "pending" | "running" | "completed" | "failed" | "cancelled";
   chunks_created: number;
   error_message: string | null;
   created_at: string | null;

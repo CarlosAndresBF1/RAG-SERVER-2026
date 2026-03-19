@@ -1,6 +1,8 @@
 # Odyssey RAG
 
-Self-contained knowledge retrieval system for the Odyssey project — indexes ISO 20022/IPS Annex B specs, PHP source code, XML examples, Word documents (.doc/.docx), and technical documentation. Exposes knowledge via an **MCP server** (for VS Code / AI clients) and an **Admin UI** (for management).
+Self-contained knowledge retrieval system for the **Odyssey project** — indexes all Odyssey documentation including ISO 20022/IPS annexes (A, B, C), alias/QR/home banking docs, PHP source code, XML examples, Word documents (.doc/.docx), and technical documentation. Exposes knowledge via an **MCP server** (for VS Code / AI clients) and an **Admin UI** (for management).
+
+> **Note**: This RAG covers general Odyssey documentation, not just the BimPay/IPS integration. BimPay is one of many integrations supported.
 
 ## Architecture
 
@@ -111,7 +113,7 @@ RAG/
 │   ├── src/components/        #   React components
 │   └── src/lib/               #   Auth, API client, utils
 ├── db/                        # PostgreSQL schema + migrations
-├── tests/                     # Backend tests (204 unit tests)
+├── tests/                     # Backend tests (204+ unit tests)
 ├── data/sources/              # Source documents for ingestion
 ├── IAContext/                  # Architecture & planning docs
 ├── docker-compose.yml         # Full stack orchestration
@@ -157,3 +159,38 @@ Detailed docs in [IAContext/](IAContext/):
 - [DATA_MODEL.md](IAContext/DATA_MODEL.md) — database schema
 - [SECURITY.md](IAContext/SECURITY.md) — auth, secrets, access control
 - [UI.md](IAContext/UI.md) — admin UI plan and progress
+
+## Key Design Decisions
+
+### Asynchronous Ingestion
+File ingestion is **fire-and-forget**: `POST /api/v1/ingest` creates a background job and returns a `job_id` immediately. The pipeline runs in the background via `asyncio.create_task`. Poll `GET /api/v1/jobs/{id}` for progress. This means navigating away from the ingest page does **not** interrupt processing.
+
+### Job Management
+Jobs can be **cancelled** while pending or running (`POST /api/v1/jobs/{id}/cancel`), and **deleted** once finished (`DELETE /api/v1/jobs/{id}`). Cancellation is cooperative — the pipeline checks for the `cancelled` status at key stages (before parse, before embed, before store) and aborts gracefully.
+
+Job statuses: `pending` → `running` → `completed` | `failed` | `cancelled`
+
+### Source Type Taxonomy
+Documents are classified by `source_type` — detection is pattern-based on filename:
+
+| Source Type | Description |
+|-------------|-------------|
+| `annex_b_spec` | IPS Annex B specification |
+| `annex_a_spec` | Annex A specification |
+| `annex_c_spec` | Annex C specification |
+| `tech_doc` | BimPay technical/infrastructure docs |
+| `alias_doc` | Alias documentation |
+| `qr_doc` | QR / Código QR documentation |
+| `banking_doc` | Home banking documentation |
+| `integration_doc` | Integration guides |
+| `php_code` | PHP source code |
+| `xml_example` | XML message examples |
+| `postman_collection` | Postman collections |
+| `pdf_doc` | PDF documents |
+| `word_doc` | Word documents (.doc/.docx) |
+| `generic_text` | Markdown, text, RST (fallback) |
+
+### Coverage Scope
+The coverage page shows **two views**:
+1. **Documentation Overview** — all documents by source type (docs, chunks, % distribution)
+2. **ISO 20022 Message Matrix** — message_type × source_type (BimPay/IPS specific)

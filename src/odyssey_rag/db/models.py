@@ -214,7 +214,7 @@ class IngestJob(Base):
     source_type: Mapped[str] = mapped_column(String(50), nullable=False)
     status: Mapped[str] = mapped_column(
         String(20), default="pending", nullable=False
-    )  # pending | running | completed | failed
+    )  # pending | running | completed | failed | cancelled
     chunks_created: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     metadata_json: Mapped[dict[str, Any]] = mapped_column(

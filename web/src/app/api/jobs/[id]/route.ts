@@ -16,3 +16,18 @@ export async function GET(
   const data = await res.json();
   return NextResponse.json(data, { status: res.status });
 }
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+  const res = await fetch(`${RAG_API_URL}/api/v1/jobs/${id}`, {
+    method: "DELETE",
+    headers: {
+      ...(RAG_API_KEY ? { "X-API-Key": RAG_API_KEY } : {}),
+    },
+  });
+  const data = await res.json();
+  return NextResponse.json(data, { status: res.status });
+}

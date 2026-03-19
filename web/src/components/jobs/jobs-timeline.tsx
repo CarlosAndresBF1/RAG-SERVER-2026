@@ -6,7 +6,7 @@ import { useState } from "react";
 import type { IngestJob } from "@/types/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Clock, Loader2, RefreshCw } from "lucide-react";
+import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Clock, Loader2, RefreshCw, Ban, Trash2 } from "lucide-react";
 
 const statusConfig: Record<string, {
   variant: "default" | "secondary" | "destructive" | "outline";
@@ -14,11 +14,12 @@ const statusConfig: Record<string, {
 }> = {
   completed: { variant: "default", icon: CheckCircle2 },
   failed: { variant: "destructive", icon: XCircle },
+  cancelled: { variant: "outline", icon: Ban },
   pending: { variant: "outline", icon: Clock },
   running: { variant: "secondary", icon: Loader2 },
 };
 
-const STATUSES = ["", "pending", "running", "completed", "failed"];
+const STATUSES = ["", "pending", "running", "completed", "failed", "cancelled"];
 
 interface Props {
   jobs: IngestJob[];
@@ -30,6 +31,8 @@ interface Props {
 export function JobsTimeline({ jobs, page, totalPages, currentStatus = "" }: Props) {
   const router = useRouter();
   const [rerunningId, setRerunningId] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const rerunJob = async (job: IngestJob) => {
     setRerunningId(job.id);
@@ -46,6 +49,26 @@ export function JobsTimeline({ jobs, page, totalPages, currentStatus = "" }: Pro
       router.refresh();
     } finally {
       setRerunningId(null);
+    }
+  };
+
+  const cancelJob = async (job: IngestJob) => {
+    setCancellingId(job.id);
+    try {
+      await fetch(`/api/jobs/${job.id}/cancel`, { method: "POST" });
+      router.refresh();
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
+  const deleteJob = async (job: IngestJob) => {
+    setDeletingId(job.id);
+    try {
+      await fetch(`/api/jobs/${job.id}`, { method: "DELETE" });
+      router.refresh();
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -94,7 +117,7 @@ export function JobsTimeline({ jobs, page, totalPages, currentStatus = "" }: Pro
                 className="flex items-start gap-4 border border-border/50 bg-card rounded-md p-4 shadow-sm hover:bg-muted/20 transition-colors"
               >
                 <div className="mt-0.5">
-                  <Icon className={`h-5 w-5 ${job.status === "failed" ? "text-destructive" : job.status === "completed" ? "text-green-600" : "text-muted-foreground"}`} />
+                  <Icon className={`h-5 w-5 ${job.status === "failed" ? "text-destructive" : job.status === "completed" ? "text-green-600" : job.status === "cancelled" ? "text-muted-foreground" : "text-muted-foreground"}`} />
                 </div>
                 <div className="flex-1 min-w-0 space-y-1">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -121,19 +144,56 @@ export function JobsTimeline({ jobs, page, totalPages, currentStatus = "" }: Pro
                     <p className="text-xs text-destructive mt-1 font-mono">{job.error_message}</p>
                   )}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => rerunJob(job)}
-                  disabled={rerunningId === job.id}
-                  title="Re-run ingestion"
-                >
-                  {rerunningId === job.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-4 w-4" />
+                <div className="flex items-center gap-1">
+                  {/* Cancel — only for pending/running */}
+                  {(job.status === "pending" || job.status === "running") && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => cancelJob(job)}
+                      disabled={cancellingId === job.id}
+                      title="Cancel job"
+                    >
+                      {cancellingId === job.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Ban className="h-4 w-4 text-destructive" />
+                      )}
+                    </Button>
                   )}
-                </Button>
+                  {/* Re-run — for completed/failed/cancelled */}
+                  {(job.status === "completed" || job.status === "failed" || job.status === "cancelled") && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => rerunJob(job)}
+                      disabled={rerunningId === job.id}
+                      title="Re-run ingestion"
+                    >
+                      {rerunningId === job.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4" />
+                      )}
+                    </Button>
+                  )}
+                  {/* Delete — for completed/failed/cancelled */}
+                  {(job.status === "completed" || job.status === "failed" || job.status === "cancelled") && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteJob(job)}
+                      disabled={deletingId === job.id}
+                      title="Delete job record"
+                    >
+                      {deletingId === job.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                      )}
+                    </Button>
+                  )}
+                </div>
               </div>
             );
           })

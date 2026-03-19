@@ -1,8 +1,8 @@
 # Odyssey RAG — Ingestion Pipeline
 
-> **Version**: 1.0.0  
-> **Date**: 2026-03-02  
-> **Status**: Planning  
+> **Version**: 1.1.0  
+> **Date**: 2026-03-18  
+> **Status**: Implemented  
 > **Ref**: [ARCHITECTURE.md](ARCHITECTURE.md) §3.1, [DATA_MODEL.md](DATA_MODEL.md) §4
 
 ---
@@ -19,10 +19,38 @@ Input File → Detect Type → Parse → Chunk → Extract Metadata → Embed �
 
 | Entry | Trigger |
 |-------|---------|
-| `POST /api/v1/ingest` | HTTP API call (manual or scripted) |
+| `POST /api/v1/ingest` | HTTP API call (async — returns job_id immediately) |
+| `POST /api/v1/ingest/batch` | Batch HTTP API call (async — returns job IDs) |
 | `oddysey_rag.ingest` | MCP tool call from VS Code |
 | `scripts/seed_initial_sources.py` | One-time initial seeding |
-| File watcher (future) | Auto-detect changes in `data/sources/` |
+
+### 1.2 Async Processing Model
+
+Ingestion is **fire-and-forget**. The API endpoint:
+1. Creates an `IngestJob` record with `status="pending"`
+2. Launches `asyncio.create_task(_run_ingest_background(...))`
+3. Returns `{ job_id, status: "pending" }` immediately
+
+The pipeline running in background will:
+- Re-use the existing pending `IngestJob` via `find_pending_by_path()`
+- Transition: `pending` → `running` → `completed|failed`
+- Check for cancellation at key stages (before parse, before embed, before store)
+- Client polls `GET /api/v1/jobs/{id}` for progress
+
+### 1.3 Job Lifecycle
+
+```
+pending ──→ running ──→ completed
+   │           │
+   │           ├──→ failed
+   │           │
+   ├──→ cancelled (user action)
+   │           │
+   └───────────┘
+```
+
+- **Cancel**: `POST /api/v1/jobs/{id}/cancel` — marks the job as `cancelled`. The background pipeline checks status at each major step and aborts via `IngestCancelledError`.
+- **Delete**: `DELETE /api/v1/jobs/{id}` — removes the job record (only for finished jobs: completed, failed, or cancelled).
 
 ### 1.2 Pipeline Steps
 
@@ -64,10 +92,18 @@ async def ingest(source_path: str, overrides: dict | None = None) -> IngestResul
 ```python
 # ingestion/pipeline.py
 SOURCE_TYPE_RULES = [
-    # Pattern-based detection (order matters: first match wins)
+    # ── BimPay / IPS integration ──────────────────────────────────────
     (r"IPS_Annex_B.*\.md$",                "annex_b_spec"),
     (r"BIMPAY_(TECHNICAL|INFRASTRUCTURE).*\.md$", "tech_doc"),
     (r"CLAUDE\.md$",                        "claude_context"),
+    # ── General Odyssey documentation ─────────────────────────────
+    (r"[Aa]nnex[_\s]?[Aa]",                  "annex_a_spec"),
+    (r"[Aa]nnex[_\s]?[Cc]",                  "annex_c_spec"),
+    (r"(?i)alias",                           "alias_doc"),
+    (r"(?i)qr|codigo.?qr",                  "qr_doc"),
+    (r"(?i)home.?banking|banca.?electronica","banking_doc"),
+    (r"(?i)integration|integraci[oó]n",      "integration_doc"),
+    # ── Code & data sources ───────────────────────────────────────
     (r"\.php$",                             "php_code"),
     (r"\.xml$",                             "xml_example"),
     (r"\.postman_collection\.json$",        "postman_collection"),
@@ -126,7 +162,7 @@ class BaseParser(ABC):
         ...
 ```
 
-### 3.2 MarkdownParser (`annex_b_spec`, `tech_doc`, `claude_context`, `generic_text`)
+### 3.2 MarkdownParser (`annex_b_spec`, `annex_a_spec`, `annex_c_spec`, `tech_doc`, `claude_context`, `generic_text`, `alias_doc`, `qr_doc`, `banking_doc`, `integration_doc`)
 
 **Strategy**: Split by heading hierarchy (H1 → H2 → H3). Each section preserves its heading lineage.
 

@@ -199,6 +199,20 @@ async def _is_unchanged(
     return existing.file_hash == new_hash
 
 
+# ── Cancellation check ────────────────────────────────────────────────────────
+
+class IngestCancelledError(Exception):
+    """Raised when a job has been cancelled by the user."""
+
+
+async def _check_cancelled(job_id: uuid.UUID) -> None:
+    """Check if the job was cancelled; raise IngestCancelledError if so."""
+    async with db_session() as session:
+        job = await IngestJobRepository(session).get_by_id(job_id)
+        if job and job.status == "cancelled":
+            raise IngestCancelledError(f"Job {job_id} cancelled by user")
+
+
 # ── Batch embedding helper ────────────────────────────────────────────────────
 
 async def _embed_chunks(texts: list[str]) -> list[list[float]]:
@@ -300,9 +314,18 @@ async def ingest(
 
     # ── Parse ─────────────────────────────────────────────────────────────────
     try:
+        await _check_cancelled(job_id)
         parser = _get_parser(source_type)
         parsed_sections: list[ParsedSection] = parser.parse(source_path)
         log.info("parsed", section_count=len(parsed_sections))
+    except IngestCancelledError:
+        log.info("cancelled_before_parse")
+        return IngestResult(
+            status="failed",
+            source_path=source_path,
+            source_type=source_type,
+            error="Cancelled by user",
+        )
     except Exception as exc:
         log.error("parse_failed", error=str(exc))
         async with db_session() as session:
@@ -351,12 +374,22 @@ async def ingest(
 
     # ── Generate embeddings ───────────────────────────────────────────────────
     try:
+        await _check_cancelled(job_id)
+
         async with db_session() as session:
             await IngestJobRepository(session).mark_running(job_id)
 
         texts = [c.content for c in chunks]
         embeddings = await _embed_chunks(texts)
         log.info("embedded", embedding_count=len(embeddings))
+    except IngestCancelledError:
+        log.info("cancelled_before_embed")
+        return IngestResult(
+            status="failed",
+            source_path=source_path,
+            source_type=source_type,
+            error="Cancelled by user",
+        )
     except Exception as exc:
         log.error("embed_failed", error=str(exc))
         async with db_session() as session:
@@ -373,6 +406,8 @@ async def ingest(
     doc_id: uuid.UUID
 
     try:
+        await _check_cancelled(job_id)
+
         async with db_session() as session:
             doc_repo = DocumentRepository(session)
             chunk_repo = ChunkRepository(session)
@@ -436,6 +471,14 @@ async def ingest(
             await job_repo.mark_completed(job_id, chunks_created=len(chunks))
             log.info("stored", doc_id=str(doc_id), chunks=len(chunks))
 
+    except IngestCancelledError:
+        log.info("cancelled_before_store")
+        return IngestResult(
+            status="failed",
+            source_path=source_path,
+            source_type=source_type,
+            error="Cancelled by user",
+        )
     except Exception as exc:
         log.error("store_failed", error=str(exc))
         async with db_session() as session:

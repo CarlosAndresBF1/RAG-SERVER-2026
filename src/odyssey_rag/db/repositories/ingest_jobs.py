@@ -137,6 +137,43 @@ class IngestJobRepository:
         )
         logger.error("ingest_job.failed", id=str(job_id), error=error_message)
 
+    async def mark_cancelled(self, job_id: uuid.UUID) -> None:
+        """Transition a pending or running job to cancelled status.
+
+        Args:
+            job_id: UUID of the job to cancel.
+        """
+        await self._session.execute(
+            update(IngestJob)
+            .where(
+                IngestJob.id == job_id,
+                IngestJob.status.in_(["pending", "running"]),
+            )
+            .values(
+                status="cancelled",
+                error_message="Cancelled by user",
+                completed_at=datetime.now(tz=timezone.utc),
+            )
+        )
+        logger.info("ingest_job.cancelled", id=str(job_id))
+
+    async def delete_job(self, job_id: uuid.UUID) -> bool:
+        """Delete a finished job record (completed, failed, or cancelled).
+
+        Returns True if a row was deleted.
+        """
+        from sqlalchemy import delete as sa_delete
+        result = await self._session.execute(
+            sa_delete(IngestJob).where(
+                IngestJob.id == job_id,
+                IngestJob.status.in_(["completed", "failed", "cancelled"]),
+            )
+        )
+        deleted = result.rowcount > 0
+        if deleted:
+            logger.info("ingest_job.deleted", id=str(job_id))
+        return deleted
+
     async def find_pending_by_path(self, source_path: str) -> IngestJob | None:
         """Find the most recent pending job for a given source path.
 

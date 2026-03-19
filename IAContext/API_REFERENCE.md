@@ -408,7 +408,47 @@ GET /api/v1/jobs
 |-------|------|---------|-------------|
 | `page` | integer | 1 | Page number |
 | `page_size` | integer | 20 | Items per page |
-| `status` | string | null | Filter: `pending`, `running`, `completed`, `failed` |
+| `status` | string | null | Filter: `pending`, `running`, `completed`, `failed`, `cancelled` |
+
+---
+
+### 2.12b Cancel Job
+
+```
+POST /api/v1/jobs/{job_id}/cancel
+```
+
+Cancels a pending or running job. Returns `409` if the job is already finished.
+
+**Response** `200 OK`:
+```json
+{
+  "id": "uuid",
+  "source_path": "/app/sources/large_doc.docx",
+  "source_type": "word_doc",
+  "status": "cancelled",
+  "error_message": "Cancelled by user",
+  "completed_at": "2026-03-18T15:30:00Z"
+}
+```
+
+---
+
+### 2.12c Delete Job
+
+```
+DELETE /api/v1/jobs/{job_id}
+```
+
+Deletes a finished job record (completed, failed, or cancelled). Returns `409` if the job is still active.
+
+**Response** `200 OK`:
+```json
+{
+  "deleted": true,
+  "id": "uuid"
+}
+```
 
 ---
 
