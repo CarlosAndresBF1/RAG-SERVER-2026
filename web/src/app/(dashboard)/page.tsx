@@ -31,7 +31,7 @@ export default async function DashboardPage() {
     getRecentJobs(),
   ]);
 
-  // Calculate coverage percentage: message_types with at least 1 chunk
+  // Calculate message-type coverage percentage (BimPay / ISO 20022)
   const totalMessageTypes = coverage.message_types.length;
   const coveredCount = coverage.message_types.filter((mt) =>
     coverage.matrix.some((c) => c.message_type === mt && c.chunk_count > 0)
@@ -40,13 +40,26 @@ export default async function DashboardPage() {
     ? Math.round((coveredCount / totalMessageTypes) * 100)
     : 0;
 
-  // Find gaps — message_types with zero total chunks
+  // Calculate overall knowledge base coverage (source types with docs)
+  const totalSourceTypes = (coverage.source_type_summary ?? []).length;
+  const overallCoverage = totalSourceTypes > 0 ? 100 : 0; // all present types have docs by definition
+
+  // Find message-type gaps — message_types with zero total chunks
   const gaps = coverage.message_types.filter((mt) => {
     const total = coverage.matrix
       .filter((c) => c.message_type === mt)
       .reduce((sum, c) => sum + c.chunk_count, 0);
     return total === 0;
   });
+
+  // Overall stats
+  const totalDocs = (coverage.source_type_summary ?? []).reduce((s, r) => s + r.doc_count, 0);
+  const totalChunks = (coverage.source_type_summary ?? []).reduce((s, r) => s + r.chunk_count, 0);
+
+  // Use the broader metric (total docs / source types) as the main coverage KPI
+  const displayCoverage = totalMessageTypes > 0
+    ? coveragePercent
+    : (totalDocs > 0 ? 100 : 0);
 
   return (
     <div className="space-y-6">
@@ -58,7 +71,7 @@ export default async function DashboardPage() {
       <KpiCards
         totalDocuments={overview.total_documents}
         totalChunks={overview.total_chunks}
-        coveragePercent={coveragePercent}
+        coveragePercent={displayCoverage}
         health={health}
       />
 
@@ -68,6 +81,22 @@ export default async function DashboardPage() {
       </div>
 
       {gaps.length > 0 && <GapAlerts gaps={gaps} />}
+
+      {/* Source-type summary on dashboard */}
+      {(coverage.source_type_summary ?? []).length > 0 && (
+        <div className="border border-border/50 bg-card rounded-md p-4 shadow-sm">
+          <h3 className="font-serif text-lg text-primary mb-3">Knowledge Base by Source Type</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {coverage.source_type_summary.map((st) => (
+              <div key={st.source_type} className="flex flex-col p-3 border border-border/30 rounded-md">
+                <span className="text-xs text-muted-foreground">{st.source_type.replace(/_/g, " ")}</span>
+                <span className="font-mono text-lg">{st.doc_count} doc{st.doc_count !== 1 ? "s" : ""}</span>
+                <span className="text-xs text-muted-foreground">{st.chunk_count.toLocaleString()} chunks</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

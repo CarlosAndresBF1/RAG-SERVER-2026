@@ -1,16 +1,18 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useDropzone } from "react-dropzone";
-import { Upload, FileText, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Upload, FileText, CheckCircle2, XCircle, Loader2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 interface FileEntry {
   file: File;
-  status: "pending" | "uploading" | "ingesting" | "completed" | "failed";
+  status: "pending" | "uploading" | "queued" | "failed";
   sourceType?: string;
-  result?: { chunks_created?: number | null; error?: string | null; document_id?: string | null };
+  jobId?: string;
+  error?: string;
 }
 
 const ACCEPTED_TYPES: Record<string, string[]> = {
@@ -31,10 +33,13 @@ function detectSourceType(name: string): string {
   if (/\.xml$/i.test(name)) return "xml_example";
   if (/\.postman_collection\.json$/i.test(name)) return "postman_collection";
   if (/\.docx?$/i.test(name)) return "word_doc";
+  if (/annex[_\s]?[ac]/i.test(name)) return "odyssey_spec";
+  if (/alias|qr|home.?banking/i.test(name)) return "odyssey_doc";
   return "generic_text";
 }
 
 export default function IngestPage() {
+  const router = useRouter();
   const [files, setFiles] = useState<FileEntry[]>([]);
   const [replaceExisting, setReplaceExisting] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -61,12 +66,13 @@ export default function IngestPage() {
 
   const processAll = async () => {
     setProcessing(true);
+    let allQueued = true;
 
     for (let i = 0; i < files.length; i++) {
       const entry = files[i];
       if (entry.status !== "pending") continue;
 
-      // Upload
+      // Upload file
       setFiles((prev) =>
         prev.map((f, idx) => (idx === i ? { ...f, status: "uploading" } : f))
       );
@@ -78,11 +84,7 @@ export default function IngestPage() {
         if (!uploadRes.ok) throw new Error(await uploadRes.text());
         const { path } = await uploadRes.json();
 
-        // Ingest
-        setFiles((prev) =>
-          prev.map((f, idx) => (idx === i ? { ...f, status: "ingesting" } : f))
-        );
-
+        // Queue ingest (fire-and-forget — returns immediately with job_id)
         const ingestRes = await fetch("/api/ingest", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -97,28 +99,38 @@ export default function IngestPage() {
 
         setFiles((prev) =>
           prev.map((f, idx) =>
-            idx === i ? { ...f, status: result.status === "failed" ? "failed" : "completed", result } : f
+            idx === i ? { ...f, status: "queued", jobId: result.job_id } : f
           )
         );
       } catch (err) {
+        allQueued = false;
         setFiles((prev) =>
           prev.map((f, idx) =>
-            idx === i ? { ...f, status: "failed", result: { error: String(err) } } : f
+            idx === i ? { ...f, status: "failed", error: String(err) } : f
           )
         );
       }
     }
 
     setProcessing(false);
+
+    // Redirect to jobs page after a short delay so user sees the queued status
+    if (allQueued) {
+      setTimeout(() => router.push("/jobs"), 1200);
+    }
   };
 
   const pendingCount = files.filter((f) => f.status === "pending").length;
+  const queuedCount = files.filter((f) => f.status === "queued").length;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
         <h2 className="text-3xl font-serif text-primary tracking-tight">Ingest Sources</h2>
-        <p className="text-muted-foreground text-sm">Upload and ingest documents into the knowledge base</p>
+        <p className="text-muted-foreground text-sm">
+          Upload documents into the knowledge base. Processing runs in the background — you can
+          navigate away safely.
+        </p>
       </div>
 
       {/* Dropzone */}
@@ -156,6 +168,16 @@ export default function IngestPage() {
                 />
                 Replace existing
               </label>
+              {queuedCount > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push("/jobs")}
+                >
+                  <ExternalLink className="h-4 w-4 mr-1" />
+                  View Jobs
+                </Button>
+              )}
               <Button
                 onClick={processAll}
                 disabled={processing || pendingCount === 0}
@@ -164,7 +186,7 @@ export default function IngestPage() {
                 {processing ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                    Processing…
+                    Uploading…
                   </>
                 ) : (
                   `Ingest ${pendingCount} file${pendingCount !== 1 ? "s" : ""}`
@@ -181,8 +203,8 @@ export default function IngestPage() {
                   <p className="text-sm font-medium truncate">{entry.file.name}</p>
                   <p className="text-xs text-muted-foreground">
                     {(entry.file.size / 1024).toFixed(1)} KB
-                    {entry.result?.chunks_created != null && ` · ${entry.result.chunks_created} chunks created`}
-                    {entry.result?.error && ` · ${entry.result.error}`}
+                    {entry.status === "queued" && " · Queued for processing"}
+                    {entry.error && ` · ${entry.error}`}
                   </p>
                 </div>
                 <Badge variant="outline">{entry.sourceType?.replace(/_/g, " ")}</Badge>
@@ -205,12 +227,11 @@ export default function IngestPage() {
 
 function StatusIcon({ status }: { status: FileEntry["status"] }) {
   switch (status) {
-    case "completed":
+    case "queued":
       return <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />;
     case "failed":
       return <XCircle className="h-4 w-4 text-destructive flex-shrink-0" />;
     case "uploading":
-    case "ingesting":
       return <Loader2 className="h-4 w-4 text-secondary animate-spin flex-shrink-0" />;
     default:
       return <div className="h-4 w-4 rounded-full border-2 border-border flex-shrink-0" />;

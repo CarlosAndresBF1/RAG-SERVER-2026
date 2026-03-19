@@ -5,10 +5,10 @@ export function GapAlerts({ gaps }: { gaps: string[] }) {
     <div className="border border-destructive/30 bg-destructive/5 rounded-md p-4">
       <div className="flex items-center gap-2 mb-3">
         <AlertTriangle className="h-4 w-4 text-destructive" />
-        <h3 className="font-serif text-lg text-destructive">Coverage Gaps Detected</h3>
+        <h3 className="font-serif text-lg text-destructive">ISO 20022 Coverage Gaps</h3>
       </div>
       <p className="text-sm text-muted-foreground mb-3">
-        The following message types have no indexed chunks:
+        The following ISO 20022 message types (BimPay / IPS) have no indexed chunks:
       </p>
       <div className="flex flex-wrap gap-2">
         {gaps.map((gap) => (

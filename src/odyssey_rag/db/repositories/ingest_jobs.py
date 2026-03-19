@@ -136,3 +136,17 @@ class IngestJobRepository:
             )
         )
         logger.error("ingest_job.failed", id=str(job_id), error=error_message)
+
+    async def find_pending_by_path(self, source_path: str) -> IngestJob | None:
+        """Find the most recent pending job for a given source path.
+
+        Used by the pipeline to re-use job records created by the API layer
+        instead of creating duplicates.
+        """
+        result = await self._session.execute(
+            select(IngestJob)
+            .where(IngestJob.source_path == source_path, IngestJob.status == "pending")
+            .order_by(IngestJob.created_at.desc())
+            .limit(1)
+        )
+        return result.scalar_one_or_none()

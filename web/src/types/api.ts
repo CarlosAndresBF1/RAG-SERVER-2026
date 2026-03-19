@@ -14,10 +14,17 @@ export interface CoverageCell {
   chunk_count: number;
 }
 
+export interface SourceTypeSummary {
+  source_type: string;
+  doc_count: number;
+  chunk_count: number;
+}
+
 export interface CoverageData {
   matrix: CoverageCell[];
   message_types: string[];
   source_types: string[];
+  source_type_summary: SourceTypeSummary[];
 }
 
 export interface FeedbackRow {

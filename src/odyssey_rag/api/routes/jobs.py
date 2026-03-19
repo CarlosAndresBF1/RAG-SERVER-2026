@@ -1,6 +1,8 @@
-from typing import Any, Dict
+from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query
+from typing import Any, Dict, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import asc, desc, select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,11 +12,44 @@ from odyssey_rag.db.models import IngestJob
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
 
+def _serialize_job(job: IngestJob) -> dict:
+    return {
+        "id": str(job.id),
+        "source_path": job.source_path,
+        "source_type": job.source_type,
+        "status": job.status,
+        "chunks_created": job.chunks_created,
+        "error_message": job.error_message,
+        "created_at": job.created_at.isoformat() if job.created_at else None,
+        "started_at": job.started_at.isoformat() if job.started_at else None,
+        "completed_at": job.completed_at.isoformat() if job.completed_at else None,
+    }
+
+
+@router.get("/{job_id}")
+async def get_job(
+    job_id: str,
+    db: AsyncSession = Depends(get_async_session),
+) -> Dict[str, Any]:
+    """Get a single ingest job by ID (used for polling)."""
+    import uuid as _uuid
+    try:
+        uid = _uuid.UUID(job_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid job ID")
+
+    result = await db.execute(select(IngestJob).where(IngestJob.id == uid))
+    job = result.scalar_one_or_none()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return _serialize_job(job)
+
+
 @router.get("")
 async def list_jobs(
     limit: int = 50,
     offset: int = 0,
-    status: str | None = Query(None, description="Filter by status: pending|running|completed|failed"),
+    status: Optional[str] = Query(None, description="Filter by status: pending|running|completed|failed"),
     db: AsyncSession = Depends(get_async_session)
 ) -> Dict[str, Any]:
     """List ingestion jobs with pagination and optional status filter."""
@@ -35,18 +70,5 @@ async def list_jobs(
         "total": total,
         "limit": limit,
         "offset": offset,
-        "jobs": [
-            {
-                "id": str(job.id),
-                "source_path": job.source_path,
-                "source_type": job.source_type,
-                "status": job.status,
-                "chunks_created": job.chunks_created,
-                "error_message": job.error_message,
-                "created_at": job.created_at.isoformat() if job.created_at else None,
-                "started_at": job.started_at.isoformat() if job.started_at else None,
-                "completed_at": job.completed_at.isoformat() if job.completed_at else None,
-            }
-            for job in jobs
-        ]
+        "jobs": [_serialize_job(job) for job in jobs]
     }

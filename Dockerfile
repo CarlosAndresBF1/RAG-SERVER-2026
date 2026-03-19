@@ -32,7 +32,7 @@ RUN python -c "from sentence_transformers import CrossEncoder; CrossEncoder('cro
 
 EXPOSE 8080
 
-CMD ["uvicorn", "odyssey_rag.api.main:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "2"]
+CMD ["uvicorn", "odyssey_rag.api.main:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "1", "--timeout-keep-alive", "300"]
 
 # ── Stage 3: MCP Server ──────────────────────────────
 FROM base AS mcp

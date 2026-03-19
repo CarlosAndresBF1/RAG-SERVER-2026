@@ -42,20 +42,25 @@ async def get_overview(db: AsyncSession = Depends(get_async_session)) -> Dict[st
 
 @router.get("/coverage")
 async def get_coverage(db: AsyncSession = Depends(get_async_session)) -> Dict[str, Any]:
-    """Get coverage matrix showing chunks by message_type and source_type."""
-    stmt = (
+    """Get coverage data: message_type matrix AND source_type summary.
+
+    Returns both the original message_type × source_type matrix (for BimPay
+    ISO 20022 coverage) and a broader source_type summary that includes ALL
+    ingested documents regardless of whether they have a message_type.
+    """
+    # ── Message-type matrix (ISO 20022 / BimPay) ─────────────────────────
+    mt_stmt = (
         select(ChunkMetadata.message_type, ChunkMetadata.source_type, func.count())
         .where(ChunkMetadata.message_type != None)
         .group_by(ChunkMetadata.message_type, ChunkMetadata.source_type)
     )
-    result = await db.execute(stmt)
-    
+    mt_result = await db.execute(mt_stmt)
+
     matrix: list[dict[str, Any]] = []
     message_types = set()
     source_types = set()
-    raw_data = result.all()
 
-    for row in raw_data:
+    for row in mt_result.all():
         m_type = row.message_type
         s_type = row.source_type
         count = row.count
@@ -64,13 +69,34 @@ async def get_coverage(db: AsyncSession = Depends(get_async_session)) -> Dict[st
         matrix.append({
             "message_type": m_type,
             "source_type": s_type,
-            "chunk_count": count
+            "chunk_count": count,
         })
-        
+
+    # ── Source-type summary (ALL documents) ───────────────────────────────
+    st_stmt = (
+        select(
+            Document.source_type,
+            func.count(func.distinct(Document.id)).label("doc_count"),
+            func.coalesce(func.sum(Document.total_chunks), 0).label("chunk_count"),
+        )
+        .where(Document.is_current == True)
+        .group_by(Document.source_type)
+    )
+    st_result = await db.execute(st_stmt)
+    source_type_summary = [
+        {
+            "source_type": row.source_type,
+            "doc_count": row.doc_count,
+            "chunk_count": int(row.chunk_count),
+        }
+        for row in st_result.all()
+    ]
+
     return {
         "matrix": matrix,
         "message_types": sorted(list(message_types)),
         "source_types": sorted(list(source_types)),
+        "source_type_summary": sorted(source_type_summary, key=lambda x: x["chunk_count"], reverse=True),
     }
 
 

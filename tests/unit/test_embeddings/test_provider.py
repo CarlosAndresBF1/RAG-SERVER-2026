@@ -191,7 +191,9 @@ class TestEmbeddingFactory:
     def test_factory_raises_config_error_for_unknown_provider(self) -> None:
         """Unknown provider name raises ConfigError."""
         from odyssey_rag.config import Settings
+        from odyssey_rag.embeddings.factory import reset_embedding_provider_cache
 
+        reset_embedding_provider_cache()
         settings = Settings(embedding_provider="cohere")
         with pytest.raises(ConfigError, match="Unknown EMBEDDING_PROVIDER"):
             create_embedding_provider(settings)
@@ -199,7 +201,9 @@ class TestEmbeddingFactory:
     def test_factory_raises_config_error_when_openai_key_missing(self) -> None:
         """OpenAI provider without API key raises ConfigError."""
         from odyssey_rag.config import Settings
+        from odyssey_rag.embeddings.factory import reset_embedding_provider_cache
 
+        reset_embedding_provider_cache()
         settings = Settings(embedding_provider="openai", openai_api_key="")
         with pytest.raises(ConfigError, match="OPENAI_API_KEY"):
             create_embedding_provider(settings)

@@ -89,10 +89,19 @@ export default function SearchPage() {
           >
             <option value="">All</option>
             <option value="annex_b_spec">Annex B Spec</option>
+            <option value="annex_a_spec">Annex A Spec</option>
+            <option value="annex_c_spec">Annex C Spec</option>
+            <option value="tech_doc">Tech Doc</option>
             <option value="php_code">PHP Code</option>
             <option value="xml_example">XML Example</option>
-            <option value="tech_doc">Tech Doc</option>
             <option value="postman_collection">Postman</option>
+            <option value="alias_doc">Aliases</option>
+            <option value="qr_doc">QR</option>
+            <option value="banking_doc">Home Banking</option>
+            <option value="integration_doc">Integration</option>
+            <option value="pdf_doc">PDF Document</option>
+            <option value="word_doc">Word Document</option>
+            <option value="generic_text">General Text</option>
           </select>
         </div>
         <div className="flex items-center gap-2">

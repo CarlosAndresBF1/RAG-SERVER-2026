@@ -1,98 +1,142 @@
-"""Ingest endpoints — POST /api/v1/ingest and POST /api/v1/ingest/batch."""
+"""Ingest endpoints — POST /api/v1/ingest and POST /api/v1/ingest/batch.
+
+Ingestion is asynchronous: the endpoint creates an IngestJob record with
+status "pending", fires off the pipeline in a background task, and returns
+the job_id immediately so the client can poll /api/v1/jobs for progress.
+"""
 
 from __future__ import annotations
 
 import asyncio
-import time
+import uuid
 
+import structlog
 from fastapi import APIRouter, Depends
 
 from odyssey_rag.api.auth import verify_api_key
 from odyssey_rag.api.schemas import (
     BatchIngestRequest,
-    BatchIngestResponse,
-    BatchIngestResultItem,
     IngestRequest,
-    IngestResponse,
 )
-from odyssey_rag.ingestion.pipeline import ingest
+from odyssey_rag.db.models import IngestJob
+from odyssey_rag.db.repositories.ingest_jobs import IngestJobRepository
+from odyssey_rag.db.session import db_session
+from odyssey_rag.ingestion.pipeline import detect_source_type, ingest
 
+logger = structlog.get_logger(__name__)
 router = APIRouter()
 
 
-@router.post("/ingest", response_model=IngestResponse)
+async def _run_ingest_background(
+    source_path: str,
+    overrides: dict[str, str] | None,
+    replace_existing: bool,
+) -> None:
+    """Run the full ingest pipeline; exceptions are logged (never propagated)."""
+    try:
+        await ingest(
+            source_path=source_path,
+            overrides=overrides,
+            replace_existing=replace_existing,
+        )
+    except Exception:
+        logger.exception("background_ingest_failed", source_path=source_path)
+
+
+@router.post("/ingest")
 async def ingest_file(
     request: IngestRequest,
     _: str = Depends(verify_api_key),
-) -> IngestResponse:
-    """Ingest a single file into the knowledge base."""
+):
+    """Queue a single file for ingestion (returns immediately).
+
+    Creates an IngestJob record and launches the pipeline in background.
+    The client should poll ``GET /api/v1/jobs`` to track progress.
+    """
     overrides: dict[str, str] = {}
     if request.source_type:
         overrides["source_type"] = request.source_type
     if request.metadata_overrides:
         overrides.update(request.metadata_overrides)
 
-    start = time.monotonic()
-    result = await ingest(
-        source_path=request.source_path,
-        overrides=overrides or None,
-        replace_existing=request.replace_existing,
+    source_type = detect_source_type(request.source_path, overrides or None)
+    job_id = uuid.uuid4()
+
+    # Persist a pending job so the UI can show it immediately
+    async with db_session() as session:
+        job_repo = IngestJobRepository(session)
+        job = IngestJob(
+            id=job_id,
+            source_path=request.source_path,
+            source_type=source_type,
+            status="pending",
+        )
+        await job_repo.insert(job)
+
+    # Fire-and-forget background processing
+    asyncio.create_task(
+        _run_ingest_background(
+            source_path=request.source_path,
+            overrides=overrides or None,
+            replace_existing=request.replace_existing,
+        )
     )
-    duration_ms = int((time.monotonic() - start) * 1000)
 
-    return IngestResponse(
-        status=result.status,
-        document_id=str(result.document_id) if result.document_id else None,
-        source_path=result.source_path,
-        source_type=result.source_type or None,
-        chunks_created=result.chunks_created if result.chunks_created > 0 else None,
-        duration_ms=duration_ms,
-        reason=result.reason or None,
-        error=result.error or None,
-    )
+    return {
+        "job_id": str(job_id),
+        "status": "pending",
+        "source_path": request.source_path,
+        "source_type": source_type,
+    }
 
 
-@router.post("/ingest/batch", response_model=BatchIngestResponse)
+@router.post("/ingest/batch")
 async def ingest_batch(
     request: BatchIngestRequest,
     _: str = Depends(verify_api_key),
-) -> BatchIngestResponse:
-    """Ingest multiple files concurrently."""
+):
+    """Queue multiple files for ingestion (returns immediately).
 
-    async def _ingest_one(item):
+    Creates one IngestJob per file and launches background tasks.
+    """
+    jobs_created: list[dict] = []
+
+    for item in request.sources:
         overrides: dict[str, str] = {}
         if item.source_type:
             overrides["source_type"] = item.source_type
         if item.metadata_overrides:
             overrides.update(item.metadata_overrides)
-        return await ingest(
-            source_path=item.source_path,
-            overrides=overrides or None,
-            replace_existing=request.replace_existing,
+
+        source_type = detect_source_type(item.source_path, overrides or None)
+        job_id = uuid.uuid4()
+
+        async with db_session() as session:
+            job_repo = IngestJobRepository(session)
+            job = IngestJob(
+                id=job_id,
+                source_path=item.source_path,
+                source_type=source_type,
+                status="pending",
+            )
+            await job_repo.insert(job)
+
+        asyncio.create_task(
+            _run_ingest_background(
+                source_path=item.source_path,
+                overrides=overrides or None,
+                replace_existing=request.replace_existing,
+            )
         )
 
-    start = time.monotonic()
-    results = await asyncio.gather(*[_ingest_one(item) for item in request.sources])
-    duration_ms = int((time.monotonic() - start) * 1000)
+        jobs_created.append({
+            "job_id": str(job_id),
+            "source_path": item.source_path,
+            "source_type": source_type,
+            "status": "pending",
+        })
 
-    completed = sum(1 for r in results if r.status == "completed")
-    skipped = sum(1 for r in results if r.status == "skipped")
-    failed = sum(1 for r in results if r.status == "failed")
-
-    return BatchIngestResponse(
-        total=len(results),
-        completed=completed,
-        skipped=skipped,
-        failed=failed,
-        results=[
-            BatchIngestResultItem(
-                source_path=r.source_path,
-                status=r.status,
-                chunks_created=r.chunks_created if r.chunks_created > 0 else None,
-                reason=r.reason or None,
-                error=r.error or None,
-            )
-            for r in results
-        ],
-        duration_ms=duration_ms,
-    )
+    return {
+        "total": len(jobs_created),
+        "jobs": jobs_created,
+    }

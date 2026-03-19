@@ -55,9 +55,18 @@ logger = structlog.get_logger(__name__)
 # ── Source type detection ─────────────────────────────────────────────────────
 
 SOURCE_TYPE_RULES: list[tuple[str, str]] = [
+    # ── BimPay / IPS integration ──────────────────────────────────────────
     (r"IPS_Annex_B.*\.md$", "annex_b_spec"),
     (r"BIMPAY_(TECHNICAL|INFRASTRUCTURE).*\.md$", "tech_doc"),
     (r"CLAUDE\.md$", "claude_context"),
+    # ── General Odyssey documentation ─────────────────────────────────────
+    (r"[Aa]nnex[_\s]?[Aa]", "annex_a_spec"),
+    (r"[Aa]nnex[_\s]?[Cc]", "annex_c_spec"),
+    (r"(?i)alias", "alias_doc"),
+    (r"(?i)qr|codigo.?qr", "qr_doc"),
+    (r"(?i)home.?banking|banca.?electronica", "banking_doc"),
+    (r"(?i)integration|integraci[oó]n", "integration_doc"),
+    # ── Code & data sources ───────────────────────────────────────────────
     (r"\.php$", "php_code"),
     (r"\.xml$", "xml_example"),
     (r"\.postman_collection\.json$", "postman_collection"),
@@ -130,7 +139,11 @@ def compute_sha256(file_path: str) -> str:
 
 def _get_parser(source_type: str):
     """Instantiate the appropriate parser for a source type."""
-    if source_type in ("annex_b_spec", "tech_doc", "claude_context", "generic_text"):
+    if source_type in (
+        "annex_b_spec", "annex_a_spec", "annex_c_spec",
+        "tech_doc", "claude_context", "generic_text",
+        "alias_doc", "qr_doc", "banking_doc", "integration_doc",
+    ):
         return MarkdownParser()
     if source_type == "php_code":
         return PhpCodeParser()
@@ -150,7 +163,11 @@ def _get_chunker(source_type: str):
     max_tokens = settings.chunk_size
     overlap = settings.chunk_overlap
 
-    if source_type in ("annex_b_spec", "tech_doc", "claude_context", "generic_text"):
+    if source_type in (
+        "annex_b_spec", "annex_a_spec", "annex_c_spec",
+        "tech_doc", "claude_context", "generic_text",
+        "alias_doc", "qr_doc", "banking_doc", "integration_doc",
+    ):
         return MarkdownChunker(max_tokens=max_tokens, overlap_tokens=overlap)
     if source_type == "php_code":
         return PhpCodeChunker(max_tokens=max_tokens, overlap_tokens=overlap)
@@ -252,7 +269,6 @@ async def ingest(
     file_hash = compute_sha256(source_path)
 
     # ── Check change detection via DB ─────────────────────────────────────────
-    job_id = uuid.uuid4()
 
     async with db_session() as session:
         doc_repo = DocumentRepository(session)
@@ -268,14 +284,19 @@ async def ingest(
                     reason="unchanged",
                 )
 
-        # Create ingest job record
-        job = IngestJob(
-            id=job_id,
-            source_path=source_path,
-            source_type=source_type,
-            status="pending",
-        )
-        await job_repo.insert(job)
+        # Re-use an existing pending job (created by the API layer) or create one
+        existing_pending = await job_repo.find_pending_by_path(source_path)
+        if existing_pending:
+            job_id = existing_pending.id
+        else:
+            job_id = uuid.uuid4()
+            job = IngestJob(
+                id=job_id,
+                source_path=source_path,
+                source_type=source_type,
+                status="pending",
+            )
+            await job_repo.insert(job)
 
     # ── Parse ─────────────────────────────────────────────────────────────────
     try:
@@ -348,7 +369,7 @@ async def ingest(
         )
 
     # ── Store atomically ──────────────────────────────────────────────────────
-    integration = (overrides or {}).get("integration", "bimpay")
+    integration = (overrides or {}).get("integration", "odyssey")
     doc_id: uuid.UUID
 
     try:
