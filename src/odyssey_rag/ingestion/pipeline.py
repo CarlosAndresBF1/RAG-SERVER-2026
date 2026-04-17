@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+import time
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -67,7 +68,7 @@ SOURCE_TYPE_RULES: list[tuple[str, str]] = [
     (r"(?i)home.?banking|banca.?electronica", "banking_doc"),
     (r"(?i)integration|integraci[oó]n", "integration_doc"),
     # ── Multi-integration source types ────────────────────────────────────
-    (r"(?i)paysett?", "paysett_doc"),
+    (r"(?i)payss?ett?", "paysett_doc"),
     (r"(?i)blossom|blite|bl[-_]", "blite_doc"),
     (r"(?i)runbook|operations|ops[-_]", "runbook"),
     (r"(?i)architecture|system[-_]?design", "architecture_doc"),
@@ -271,10 +272,12 @@ async def ingest(
     """
     path = Path(source_path)
     log = logger.bind(source_path=source_path)
+    _ingest_start = time.monotonic()
 
     # ── Validate file exists ──────────────────────────────────────────────────
     if not path.exists():
         log.warning("file_not_found")
+        _record_ingest_metrics("unknown", "failed")
         return IngestResult(
             status="failed",
             source_path=source_path,
@@ -495,6 +498,7 @@ async def ingest(
             error=f"Storage failed: {exc}",
         )
 
+    _record_ingest_metrics(source_type, "completed", time.monotonic() - _ingest_start)
     return IngestResult(
         status="completed",
         source_path=source_path,
@@ -502,3 +506,15 @@ async def ingest(
         chunks_created=len(chunks),
         document_id=doc_id,
     )
+
+
+def _record_ingest_metrics(source_type: str, status: str, duration: float | None = None) -> None:
+    """Record ingestion metrics if the observability module is available."""
+    try:
+        from odyssey_rag.observability import INGEST_DURATION, INGEST_TOTAL
+
+        INGEST_TOTAL.labels(source_type=source_type, status=status).inc()
+        if duration is not None:
+            INGEST_DURATION.observe(duration)
+    except Exception:
+        pass  # observability is best-effort

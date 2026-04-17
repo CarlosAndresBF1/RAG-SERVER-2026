@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-import pytest
 
-from odyssey_rag.retrieval.query_processor import EXPANSIONS, ProcessedQuery, QueryProcessor
+from odyssey_rag.retrieval.query_processor import EXPANSIONS, QueryProcessor
 
 
 class TestQueryProcessor:

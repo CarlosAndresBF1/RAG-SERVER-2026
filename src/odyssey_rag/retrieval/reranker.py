@@ -11,6 +11,7 @@ available or if reranking is disabled in settings.
 from __future__ import annotations
 
 import asyncio
+import time
 from functools import cached_property
 
 import structlog
@@ -73,6 +74,7 @@ class CrossEncoderReranker:
         if not candidates:
             return []
 
+        rerank_start = time.monotonic()
         try:
             pairs = [(query, c.content) for c in candidates]
             loop = asyncio.get_running_loop()
@@ -86,7 +88,9 @@ class CrossEncoderReranker:
                 candidate.rerank_score = float(score)
 
             candidates.sort(key=lambda c: c.rerank_score, reverse=True)
-            return candidates[:top_k]
+            result = candidates[:top_k]
+            _record_reranker_duration(time.monotonic() - rerank_start)
+            return result
 
         except Exception as exc:
             logger.warning(
@@ -98,6 +102,7 @@ class CrossEncoderReranker:
             candidates.sort(key=lambda c: c.rrf_score, reverse=True)
             for c in candidates:
                 c.rerank_score = c.rrf_score
+            _record_reranker_duration(time.monotonic() - rerank_start)
             return candidates[:top_k]
 
 
@@ -128,3 +133,13 @@ class PassthroughReranker:
             c.rerank_score = c.rrf_score
         sorted_cands = sorted(candidates, key=lambda c: c.rrf_score, reverse=True)
         return sorted_cands[:top_k]
+
+
+def _record_reranker_duration(duration: float) -> None:
+    """Record reranker duration metric if observability is available."""
+    try:
+        from odyssey_rag.observability import RERANKER_DURATION
+
+        RERANKER_DURATION.observe(duration)
+    except Exception:
+        pass  # observability is best-effort

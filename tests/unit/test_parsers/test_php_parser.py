@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
 
 from odyssey_rag.ingestion.parsers.php_code import PhpCodeParser
 

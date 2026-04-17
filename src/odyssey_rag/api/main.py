@@ -17,7 +17,21 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from odyssey_rag.api.errors import http_exception_handler, validation_exception_handler
-from odyssey_rag.api.routes import chunks, feedback, ingest, search, sources, stats, jobs, auth, tokens, upload, admin, audit
+from odyssey_rag.api.routes import (
+    admin,
+    audit,
+    auth,
+    chunks,
+    feedback,
+    gc,
+    ingest,
+    jobs,
+    search,
+    sources,
+    stats,
+    tokens,
+    upload,
+)
 from odyssey_rag.config import get_settings
 from odyssey_rag.db.session import close_engine, get_engine
 
@@ -66,6 +80,7 @@ def create_app() -> FastAPI:
     app.include_router(upload.router, prefix="/api/v1")
     app.include_router(admin.router, prefix="/api/v1")
     app.include_router(audit.router, prefix="/api/v1")
+    app.include_router(gc.router, prefix="/api/v1")
 
     # ── Health endpoint ───────────────────────────────────────────────────────
 
@@ -129,6 +144,16 @@ def create_app() -> FastAPI:
             return JSONResponse(status_code=503, content=payload)
 
         return payload
+
+    # ── Prometheus metrics endpoint ───────────────────────────────────────────
+
+    @app.get("/metrics", tags=["observability"], summary="Prometheus metrics")
+    async def metrics():
+        """Expose Prometheus-format metrics. No auth required."""
+        from fastapi.responses import Response
+        from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+
+        return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
     return app
 

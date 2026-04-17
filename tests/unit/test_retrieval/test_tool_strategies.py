@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import uuid
 
-import pytest
 
 from odyssey_rag.retrieval.tool_strategies import (
     TOOL_STRATEGIES,

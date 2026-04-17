@@ -50,6 +50,11 @@ class Settings(BaseSettings):
     log_level: str = "info"
     rag_api_url: str = "http://localhost:8080"
 
+    # ── Cache ─────────────────────────────────
+    cache_ttl: int = 300  # seconds (5 min)
+    cache_max_size: int = 256
+    cache_enabled: bool = True
+
     # ── Auth ──────────────────────────────────
     # Comma-separated list of valid API keys, e.g. "key-abc123,key-def456"
     api_keys: list[str] = []

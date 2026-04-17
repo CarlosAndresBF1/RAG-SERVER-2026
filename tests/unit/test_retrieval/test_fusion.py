@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import uuid
 
-import pytest
 
 from odyssey_rag.retrieval.fusion import reciprocal_rank_fusion
 from odyssey_rag.retrieval.vector_search import SearchResult

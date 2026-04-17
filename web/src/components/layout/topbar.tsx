@@ -4,6 +4,7 @@ import { Search, User, Sun, Moon, Menu } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -59,7 +60,9 @@ export function Topbar({ onMenuClick }: TopbarProps) {
             <span className="sr-only">Toggle user menu</span>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Admin User</DropdownMenuLabel>
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Admin User</DropdownMenuLabel>
+            </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem>Settings</DropdownMenuItem>
             <DropdownMenuItem onClick={() => signOut()}>Sign out</DropdownMenuItem>

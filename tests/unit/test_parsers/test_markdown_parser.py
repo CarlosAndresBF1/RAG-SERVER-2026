@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
-import pytest
 
 from odyssey_rag.ingestion.parsers.markdown import MarkdownParser
 

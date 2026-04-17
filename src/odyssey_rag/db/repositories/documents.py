@@ -7,11 +7,11 @@ operations against the ``document`` table.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import structlog
-from sqlalchemy import func, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from odyssey_rag.db.models import Document
@@ -194,3 +194,34 @@ class DocumentRepository:
         await self._session.flush()
         logger.info("document.deleted", id=str(document_id))
         return True
+
+    async def garbage_collect_superseded(self, retention_days: int = 30) -> int:
+        """Delete superseded documents older than the retention period.
+
+        Removes all Documents where ``is_current=False`` and
+        ``updated_at`` is older than ``NOW() - retention_days``. Cascaded
+        foreign keys (Chunk → ChunkEmbedding, ChunkMetadata) are deleted
+        by the database via ``ON DELETE CASCADE``.
+
+        Args:
+            retention_days: Number of days to retain superseded documents
+                            before garbage collection. Defaults to 30.
+
+        Returns:
+            Number of documents deleted.
+        """
+        cutoff = datetime.now(tz=timezone.utc) - timedelta(days=retention_days)
+        result = await self._session.execute(
+            delete(Document).where(
+                Document.is_current.is_(False),
+                Document.updated_at < cutoff,
+            )
+        )
+        count: int = result.rowcount  # type: ignore[assignment]
+        logger.info(
+            "gc.superseded_deleted",
+            deleted=count,
+            retention_days=retention_days,
+            cutoff=cutoff.isoformat(),
+        )
+        return count

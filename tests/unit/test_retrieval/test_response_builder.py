@@ -4,12 +4,9 @@ from __future__ import annotations
 
 import uuid
 
-import pytest
 
 from odyssey_rag.retrieval.query_processor import ProcessedQuery
 from odyssey_rag.retrieval.response_builder import (
-    Citation,
-    Evidence,
     ResponseBuilder,
     RetrievalResponse,
 )

@@ -10,14 +10,16 @@ across requests. All I/O is async.
 from __future__ import annotations
 
 import asyncio
+import time
 
 import structlog
 
 from odyssey_rag.config import get_settings
 from odyssey_rag.embeddings.factory import create_embedding_provider
 from odyssey_rag.retrieval.bm25_search import bm25_search
+from odyssey_rag.retrieval.cache import QueryCache
 from odyssey_rag.retrieval.fusion import reciprocal_rank_fusion
-from odyssey_rag.retrieval.query_processor import ProcessedQuery, QueryProcessor
+from odyssey_rag.retrieval.query_processor import QueryProcessor
 from odyssey_rag.retrieval.reranker import CrossEncoderReranker, PassthroughReranker
 from odyssey_rag.retrieval.response_builder import ResponseBuilder, RetrievalResponse
 from odyssey_rag.retrieval.tool_strategies import (
@@ -71,32 +73,52 @@ class RetrievalEngine:
         else:
             self._reranker = PassthroughReranker()
 
+        self._cache = QueryCache(
+            max_size=settings.cache_max_size,
+            ttl=settings.cache_ttl,
+            enabled=settings.cache_enabled,
+        )
+
     async def search(
         self,
         raw_query: str,
         tool_name: str = "search",
         tool_context: dict[str, str] | None = None,
+        skip_cache: bool = False,
     ) -> RetrievalResponse:
         """Run the full retrieval pipeline for a query.
 
         Steps:
-        1. Parse and expand the query
-        2. Run vector + BM25 search concurrently
-        3. Apply tool-specific strategy (boosts, source-type filters)
-        4. Merge with RRF
-        5. Rerank with cross-encoder (or passthrough)
-        6. Assemble and return structured response
+        1. Check cache for identical query
+        2. Parse and expand the query
+        3. Run vector + BM25 search concurrently
+        4. Apply tool-specific strategy (boosts, source-type filters)
+        5. Merge with RRF
+        6. Rerank with cross-encoder (or passthrough)
+        7. Assemble and return structured response
+        8. Store in cache
 
         Args:
             raw_query:    The user's natural-language query.
             tool_name:    MCP tool name for strategy selection (default ``"search"``).
             tool_context: Optional tool parameters (message_type, focus, etc.).
+            skip_cache:   If ``True``, bypass the cache for this request.
 
         Returns:
             Structured RetrievalResponse.
         """
         log = logger.bind(tool_name=tool_name, query=raw_query[:60])
         log.info("retrieval_start")
+        start_time = time.monotonic()
+
+        # ── Cache lookup ─────────────────────────────────────────────────
+        if not skip_cache:
+            cached = self._cache.get(raw_query, tool_name, tool_context)
+            if cached is not None:
+                duration = time.monotonic() - start_time
+                log.info("retrieval_cache_hit", duration=duration)
+                _record_search_metrics(tool_name, cache_hit=True, duration=duration)
+                return cached
 
         # 1. Process query
         processed = self.query_processor.process(raw_query, tool_context)
@@ -195,7 +217,34 @@ class RetrievalEngine:
             evidence_count=len(response.evidence),
             gap_count=len(response.gaps),
         )
+
+        # ── Cache store & metrics ────────────────────────────────────────
+        if not skip_cache:
+            self._cache.put(raw_query, tool_name, tool_context, response)
+        duration = time.monotonic() - start_time
+        _record_search_metrics(tool_name, cache_hit=False, duration=duration)
+
         return response
+
+
+def _record_search_metrics(tool_name: str, *, cache_hit: bool, duration: float) -> None:
+    """Record search metrics if the observability module is available."""
+    try:
+        from odyssey_rag.observability import (
+            CACHE_HIT_TOTAL,
+            CACHE_MISS_TOTAL,
+            SEARCH_DURATION,
+            SEARCH_TOTAL,
+        )
+
+        SEARCH_TOTAL.labels(tool_name=tool_name, cache_hit=str(cache_hit).lower()).inc()
+        SEARCH_DURATION.labels(tool_name=tool_name).observe(duration)
+        if cache_hit:
+            CACHE_HIT_TOTAL.inc()
+        else:
+            CACHE_MISS_TOTAL.inc()
+    except Exception:
+        pass  # observability is best-effort
 
 
 async def _empty_task() -> list[SearchResult]:

@@ -565,3 +565,28 @@ async def test_create_user(client):
 - **Ignoring Sessions**: Not properly managing database sessions
 - **No Testing**: Skipping integration tests
 - **Tight Coupling**: Direct database access in routes
+
+## Odyssey RAG — Project-Specific Notes
+
+These patterns are specific to the Odyssey RAG FastAPI application:
+
+### Health Endpoint Pattern
+Insert health routes BEFORE auth middleware using Starlette Route at position 0:
+```python
+routes = [Route("/health", health_handler)] + existing_routes
+```
+Docker healthcheck: `httpx.get("http://localhost:PORT/health")`
+
+### Pydantic Settings Singleton
+Config uses `@lru_cache` singleton pattern in `config.py`. All settings from env vars.
+
+### Auth Middleware
+MCP server uses token-based auth middleware. Health endpoints must bypass it.
+
+### Async Executor for ML
+CPU-bound ML inference (reranker, embeddings) must use `run_in_executor`:
+```python
+scores = await loop.run_in_executor(None, self._model.predict, pairs)
+```
+
+*Updated: 2026-04-17 — Odyssey RAG audit session*

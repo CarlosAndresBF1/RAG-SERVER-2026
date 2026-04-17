@@ -33,7 +33,6 @@ from odyssey_rag.exceptions import ConfigError, EmbeddingError
 
 def _make_nomic_with_mock_model(fake_vectors: list[list[float]]) -> NomicEmbeddingProvider:
     """Return a NomicEmbeddingProvider whose _model is pre-injected via __dict__."""
-    import sys
 
     # Ensure sentence_transformers is mocked so the cached_property body never runs
     mock_st = MagicMock()
@@ -85,7 +84,6 @@ class TestNomicEmbeddingProvider:
     @pytest.mark.asyncio
     async def test_embed_raises_embedding_error_on_model_failure(self) -> None:
         """embed() wraps unexpected exceptions in EmbeddingError."""
-        import numpy as np
 
         provider = NomicEmbeddingProvider()
         mock_model = MagicMock()

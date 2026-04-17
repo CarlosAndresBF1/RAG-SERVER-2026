@@ -568,3 +568,39 @@ async def evaluate_rag_system(
 - **Slow Queries**: Optimize vector store, use caching, reduce k
 - **Hallucinations**: Improve grounding prompt, add verification step
 - **Context Too Long**: Use compression or parent document retriever
+
+## Odyssey RAG — Project-Specific Patterns
+
+### Hybrid Search Implementation
+Odyssey uses custom hybrid search (NOT LangChain):
+- **Vector**: pgvector HNSW cosine similarity on 768-dim nomic-embed-text v1.5
+- **BM25**: PostgreSQL native tsvector with GIN index (weighted: title=A, subsection=B, content=C)
+- **Fusion**: Reciprocal Rank Fusion (k=60) combining both result sets
+- **Reranker**: cross-encoder/ms-marco-MiniLM-L-6-v2 via `run_in_executor`
+
+### Nullable Filter Pattern
+All optional filters use:
+```sql
+AND (CAST(:param AS TEXT) IS NULL OR d.column = CAST(:param AS TEXT))
+```
+Pass `None` → filter skipped. No dynamic SQL needed.
+
+### Document Versioning
+- SHA-256 hash-based change detection
+- `supersede(source_path)` marks old docs `is_current=False`
+- Always filter `WHERE d.is_current = TRUE` in retrieval
+- Old chunks NOT deleted (soft deprecation only)
+
+### Source Type Detection
+Ordered regex rules in `SOURCE_TYPE_RULES`. First match wins.
+Handle brand spelling variants: `payss?ett?` for Payset/Paysset/Paysett.
+
+### Tool Strategy Pattern
+Data-driven retrieval strategies per MCP tool:
+```python
+@dataclass
+class ToolStrategy:
+    metadata_filters, source_type_boosts, require_source_types, focus_filters, bm25_boost_terms
+```
+
+*Updated: 2026-04-17 — Odyssey RAG audit session*

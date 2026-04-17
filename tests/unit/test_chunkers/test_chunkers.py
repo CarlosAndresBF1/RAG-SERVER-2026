@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 
-import pytest
 
-from odyssey_rag.ingestion.chunkers.base import Chunk, count_tokens
+from odyssey_rag.ingestion.chunkers.base import count_tokens
 from odyssey_rag.ingestion.chunkers.markdown import MarkdownChunker
 from odyssey_rag.ingestion.chunkers.php_code import PhpCodeChunker
 from odyssey_rag.ingestion.chunkers.semantic import SemanticChunker

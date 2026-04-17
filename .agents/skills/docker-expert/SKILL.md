@@ -411,3 +411,32 @@ I provide comprehensive Docker containerization expertise with focus on practica
 
 ## When to Use
 This skill is applicable to execute the workflow or actions described in the overview.
+
+## Odyssey RAG — Project-Specific Notes
+
+### Docker Compose Services
+4 services: postgres (5433), rag-api (8089), mcp-server (3010), web (3044)
+
+### Health Check Pattern
+```yaml
+healthcheck:
+  test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:PORT/health').raise_for_status()"]
+  interval: 15s
+  timeout: 5s
+  retries: 3
+  start_period: 30s
+```
+
+### pgvector Setup
+PostgreSQL 16 with pgvector extension for 768-dim embeddings (nomic-embed-text v1.5).
+HNSW index on `chunk_embedding.embedding`, GIN index on `chunk.tsvector_content`.
+
+### Build Validation
+```bash
+cd RAG && docker compose build && docker compose up -d
+docker compose ps  # All 4 services should be healthy
+curl -s http://localhost:8089/api/v1/health | jq .
+curl -s http://localhost:3010/health | jq .
+```
+
+*Updated: 2026-04-17 — Odyssey RAG audit session*

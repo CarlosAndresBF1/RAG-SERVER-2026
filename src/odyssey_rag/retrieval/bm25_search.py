@@ -42,6 +42,7 @@ async def bm25_search(
     filters = filters or {}
     msg_type = filters.get("message_type")
     source_type = filters.get("source_type")
+    integration = filters.get("integration")
 
     # Fall back gracefully if tsvector_content is null (re-index not yet run)
     sql = text(
@@ -67,6 +68,7 @@ async def bm25_search(
                   @@ websearch_to_tsquery('english', :query)
           AND (CAST(:msg_type AS TEXT) IS NULL OR cm.message_type = CAST(:msg_type AS TEXT))
           AND (CAST(:source_type AS TEXT) IS NULL OR d.source_type = CAST(:source_type AS TEXT))
+          AND (CAST(:integration AS TEXT) IS NULL OR d.integration = CAST(:integration AS TEXT))
         ORDER BY score DESC
         LIMIT :limit
         """
@@ -81,6 +83,7 @@ async def bm25_search(
                     "query": query,
                     "msg_type": msg_type,
                     "source_type": source_type,
+                    "integration": integration,
                     "limit": limit,
                 },
             )

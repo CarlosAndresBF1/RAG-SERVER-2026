@@ -1,5 +1,5 @@
 # Makefile — Odyssey RAG build/test/run shortcuts
-.PHONY: up down build logs logs-api seed shell db-shell test test-unit test-integration lint format check db-migrate db-reset clean
+.PHONY: up down build logs logs-api seed shell db-shell test test-unit test-integration lint format check migrate db-migrate db-reset clean
 
 # ── Docker ────────────────────────────────────────
 up:                              ## Start all services
@@ -55,7 +55,10 @@ check:                           ## Lint + test (CI gate)
 	@$(MAKE) test
 
 # ── Database ──────────────────────────────────────
-db-migrate:                      ## Run pending migrations
+migrate:                         ## Run Alembic migrations (upgrade head)
+	cd "$(CURDIR)" && alembic upgrade head
+
+db-migrate:                      ## Run pending migrations (legacy)
 	docker compose exec rag-api python scripts/migrate.py
 
 db-reset:                        ## Drop and recreate database
