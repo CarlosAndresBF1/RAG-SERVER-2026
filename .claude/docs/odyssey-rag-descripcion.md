@@ -28,7 +28,7 @@ En terminos simples: es un "cerebro" que lee tus documentos, los entiende, los g
 | Metodo | Descripcion |
 |--------|-------------|
 | `POST /api/v1/ingest` | Llamada HTTP manual o desde la UI web |
-| `oddysey_rag.ingest` | Tool MCP invocado desde VS Code |
+| `odyssey_rag.ingest` | Tool MCP invocado desde VS Code |
 | `seed_initial_sources.py` | Script para carga inicial masiva |
 
 ### Tipos de archivo soportados
@@ -237,7 +237,7 @@ El `ResponseBuilder` arma la respuesta final con tres secciones:
     "No se encontro documentacion sobre timeout en pacs.008"
   ],
   "followups": [
-    { "tool": "oddysey_rag.find_error", "args": {"iso_status": "RJCT"} }
+    { "tool": "odyssey_rag.find_error", "args": {"iso_status": "RJCT"} }
   ]
 }
 ```
@@ -264,12 +264,12 @@ VS Code se conecta al servidor MCP via HTTP Streamable (`POST http://localhost:3
 
 | Herramienta | Proposito | Ejemplo de uso |
 |-------------|-----------|----------------|
-| `oddysey_rag.find_message_type` | Buscar especificacion completa de un tipo de mensaje ISO 20022 (campos Annex B, codigo PHP, ejemplos XML) | "Que campos tiene un pacs.008?" |
-| `oddysey_rag.find_business_rule` | Buscar reglas de negocio y validaciones del sistema | "Cual es la regla para el monto maximo de transferencias?" |
-| `oddysey_rag.find_module` | Buscar modulos y clases PHP del proyecto Bimpay | "Donde esta el parser de camt.056?" |
-| `oddysey_rag.find_error` | Buscar codigos de error ISO y diagnostico de problemas | "Que significa el error FF01 en un RJCT de pacs.002?" |
-| `oddysey_rag.search` | Busqueda libre de texto general | "Como funciona el poller de IPS?" |
-| `oddysey_rag.ingest` | Ingestar nuevos documentos al sistema de conocimiento | "Indexa este nuevo archivo de spec" |
+| `odyssey_rag.find_message_type` | Buscar especificacion completa de un tipo de mensaje ISO 20022 (campos Annex B, codigo PHP, ejemplos XML) | "Que campos tiene un pacs.008?" |
+| `odyssey_rag.find_business_rule` | Buscar reglas de negocio y validaciones del sistema | "Cual es la regla para el monto maximo de transferencias?" |
+| `odyssey_rag.find_module` | Buscar modulos y clases PHP del proyecto Bimpay | "Donde esta el parser de camt.056?" |
+| `odyssey_rag.find_error` | Buscar codigos de error ISO y diagnostico de problemas | "Que significa el error FF01 en un RJCT de pacs.002?" |
+| `odyssey_rag.search` | Busqueda libre de texto general | "Como funciona el poller de IPS?" |
+| `odyssey_rag.ingest` | Ingestar nuevos documentos al sistema de conocimiento | "Indexa este nuevo archivo de spec" |
 
 ### Contrato de Salida (todas las herramientas)
 
@@ -421,7 +421,7 @@ Todo corre en un solo `docker compose up`:
          ↓
          ↓  ... mas tarde, un desarrollador pregunta desde VS Code ...
          ↓
- 7. MCP CALL    → Copilot llama oddysey_rag.find_message_type("pacs.008")
+ 7. MCP CALL    → Copilot llama odyssey_rag.find_message_type("pacs.008")
          ↓
  8. QUERY PREP  → Se pre-procesa la pregunta, se expanden abreviaciones
          ↓

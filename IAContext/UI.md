@@ -523,7 +523,7 @@ GET    /api/v1/jobs                ← Historial de ingest_jobs
 ```json
 {
   "servers": {
-    "oddysey-rag": {
+    "odyssey-rag": {
       "type": "sse",
       "url": "http://localhost:3010/sse",
       "headers": {

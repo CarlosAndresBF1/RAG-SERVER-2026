@@ -1,4 +1,4 @@
-"""Handler for oddysey_rag.find_module MCP tool.
+"""Handler for odyssey_rag.find_module MCP tool.
 
 Maps Odyssey implementation: file paths, PHP classes, key methods,
 and architecture for a given module or integration area.

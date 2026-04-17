@@ -19,7 +19,6 @@ import time
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 import structlog
 
@@ -29,9 +28,11 @@ from odyssey_rag.db.models import (
 )
 from odyssey_rag.db.models import (
     ChunkEmbedding,
-    ChunkMetadata as ChunkMetadataModel,
     Document,
     IngestJob,
+)
+from odyssey_rag.db.models import (
+    ChunkMetadata as ChunkMetadataModel,
 )
 from odyssey_rag.db.repositories.chunks import ChunkRepository
 from odyssey_rag.db.repositories.documents import DocumentRepository
@@ -45,10 +46,10 @@ from odyssey_rag.ingestion.chunkers.php_code import PhpCodeChunker
 from odyssey_rag.ingestion.chunkers.semantic import SemanticChunker
 from odyssey_rag.ingestion.metadata.extractor import ExtractedMetadata, MetadataExtractor
 from odyssey_rag.ingestion.parsers.base import ParsedSection
+from odyssey_rag.ingestion.parsers.docx import DocxParser
 from odyssey_rag.ingestion.parsers.markdown import MarkdownParser
 from odyssey_rag.ingestion.parsers.php_code import PhpCodeParser
 from odyssey_rag.ingestion.parsers.postman import PostmanParser
-from odyssey_rag.ingestion.parsers.docx import DocxParser
 from odyssey_rag.ingestion.parsers.xml_example import XmlExampleParser
 
 logger = structlog.get_logger(__name__)
@@ -82,8 +83,13 @@ SOURCE_TYPE_RULES: list[tuple[str, str]] = [
 ]
 
 
-def detect_source_type(path: str, overrides: Optional[dict[str, str]] = None) -> str:
+def detect_source_type(path: str, overrides: dict[str, str] | None = None) -> str:
     """Auto-detect source type from filename, with optional override.
+
+    Delegates to the :class:`SourceTypeCategorizer` when available
+    (adds DB custom rules + keyword heuristic).  Falls back to the
+    original regex-only logic when the categorizer has not been
+    initialised (e.g. in tests without a running DB).
 
     Args:
         path:      File path to classify.
@@ -92,12 +98,19 @@ def detect_source_type(path: str, overrides: Optional[dict[str, str]] = None) ->
     Returns:
         Source type string (e.g. ``"annex_b_spec"``).
     """
-    if overrides and "source_type" in overrides:
-        return overrides["source_type"]
-    for pattern, source_type in SOURCE_TYPE_RULES:
-        if re.search(pattern, path, re.IGNORECASE):
-            return source_type
-    return "generic_text"
+    try:
+        from odyssey_rag.ingestion.categorizer import get_categorizer
+
+        categorizer = get_categorizer()
+        return categorizer.detect_source_type_sync(path, overrides)
+    except Exception:
+        # Graceful fallback to hardcoded rules if categorizer unavailable
+        if overrides and "source_type" in overrides:
+            return overrides["source_type"]
+        for pattern, source_type in SOURCE_TYPE_RULES:
+            if re.search(pattern, path, re.IGNORECASE):
+                return source_type
+        return "generic_text"
 
 
 # ── Result dataclass ──────────────────────────────────────────────────────────
@@ -120,7 +133,7 @@ class IngestResult:
     source_path: str
     source_type: str = ""
     chunks_created: int = 0
-    document_id: Optional[uuid.UUID] = None
+    document_id: uuid.UUID | None = None
     reason: str = ""
     error: str = ""
 
@@ -247,7 +260,7 @@ async def _embed_chunks(texts: list[str]) -> list[list[float]]:
 
 async def ingest(
     source_path: str,
-    overrides: Optional[dict[str, str]] = None,
+    overrides: dict[str, str] | None = None,
     replace_existing: bool = False,
 ) -> IngestResult:
     """Run the full ingestion pipeline for a single file.

@@ -1,6 +1,6 @@
 {
   "servers": {
-    "oddysey-rag": {
+    "odyssey-rag": {
       "type": "http",
       "url": "http://localhost:3010/mcp/",
       "headers": {

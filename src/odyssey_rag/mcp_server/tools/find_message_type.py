@@ -1,4 +1,4 @@
-"""Handler for oddysey_rag.find_message_type MCP tool.
+"""Handler for odyssey_rag.find_message_type MCP tool.
 
 Retrieves evidence for an ISO 20022 message type from Annex B spec,
 PHP code, and XML examples.

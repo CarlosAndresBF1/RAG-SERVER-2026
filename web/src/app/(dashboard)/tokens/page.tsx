@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Key, Plus, Trash2, Copy, Eye, ShieldCheck, AlertTriangle } from "lucide-react";
+import { Key, Plus, Trash2, Copy, Eye, ShieldCheck, AlertTriangle, BookOpen, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,8 @@ export default function TokensPage() {
   const [auditLog, setAuditLog] = useState<{ tokenId: string; entries: TokenAuditEntry[] } | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [activeGuideTab, setActiveGuideTab] = useState<"vscode" | "copilot-cli" | "claude">("vscode");
+  const [snippetCopied, setSnippetCopied] = useState(false);
 
   // New token form state
   const [newName, setNewName] = useState("");
@@ -110,9 +112,9 @@ export default function TokensPage() {
     JSON.stringify(
       {
         servers: {
-          "oddysey-rag": {
-            type: "sse",
-            url: "http://localhost:3010/sse",
+          "odyssey-rag": {
+            type: "http",
+            url: "http://localhost:3010/mcp/",
             headers: { Authorization: `Bearer ${token}` },
           },
         },
@@ -120,6 +122,60 @@ export default function TokensPage() {
       null,
       2
     );
+
+  const copySnippet = async (text: string) => {
+    await navigator.clipboard.writeText(text);
+    setSnippetCopied(true);
+    setTimeout(() => setSnippetCopied(false), 2000);
+  };
+
+  const guideConfigs = {
+    vscode: {
+      label: "VS Code",
+      file: ".vscode/mcp.json",
+      description: "Add this file to your project root. GitHub Copilot Chat will detect it automatically and connect to the Odyssey RAG MCP server.",
+      snippet: JSON.stringify({
+        servers: {
+          "odyssey-rag": {
+            type: "http",
+            url: "http://localhost:3010/mcp/",
+            headers: { Authorization: "Bearer YOUR_TOKEN_HERE" },
+          },
+        },
+      }, null, 2),
+    },
+    "copilot-cli": {
+      label: "Copilot CLI",
+      file: "~/.copilot/mcp-config.json",
+      description: "Create or edit this file for global config, or use .copilot/mcp-config.json in a project for project-level config. The Copilot CLI picks it up on next launch.",
+      snippet: JSON.stringify({
+        servers: {
+          "odyssey-rag": {
+            type: "http",
+            url: "http://localhost:3010/mcp/",
+            headers: { Authorization: "Bearer YOUR_TOKEN_HERE" },
+          },
+        },
+      }, null, 2),
+    },
+    claude: {
+      label: "Claude Desktop",
+      file: "~/Library/Application Support/Claude/claude_desktop_config.json",
+      fileNote: "macOS path shown. On Windows: %APPDATA%\\Claude\\claude_desktop_config.json",
+      description: "Claude Desktop uses mcpServers (not servers) and requires mcp-remote as a bridge for HTTP-based MCP servers. Install it automatically via npx.",
+      snippet: JSON.stringify({
+        mcpServers: {
+          "odyssey-rag": {
+            command: "npx",
+            args: ["-y", "mcp-remote", "http://localhost:3010/mcp/"],
+            env: { MCP_HEADERS: "Authorization: Bearer YOUR_TOKEN_HERE" },
+          },
+        },
+      }, null, 2),
+    },
+  } as const;
+
+  const currentGuide = guideConfigs[activeGuideTab];
 
   return (
     <div className="space-y-6">
@@ -323,6 +379,72 @@ export default function TokensPage() {
           </div>
         </div>
       )}
+
+      {/* MCP Setup Guide — always visible */}
+      <div className="border border-border/50 bg-card rounded-md shadow-sm">
+        <div className="px-4 py-3 border-b border-border/50">
+          <div className="flex items-center gap-2">
+            <BookOpen className="h-5 w-5 text-primary" />
+            <h3 className="font-serif text-lg text-primary">Setup Guide</h3>
+          </div>
+          <p className="text-muted-foreground text-sm mt-1">
+            Configure your AI client to connect to the Odyssey RAG MCP server.
+            Replace <code className="font-mono text-xs bg-muted px-1 py-0.5 rounded">YOUR_TOKEN_HERE</code> with a token from above.
+          </p>
+        </div>
+
+        {/* Tab buttons */}
+        <div className="flex border-b border-border/50">
+          {(Object.keys(guideConfigs) as Array<keyof typeof guideConfigs>).map((key) => (
+            <button
+              key={key}
+              onClick={() => setActiveGuideTab(key)}
+              className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+                activeGuideTab === key
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {guideConfigs[key].label}
+              {activeGuideTab === key && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t" />
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab content */}
+        <div className="p-4 space-y-3">
+          <div className="flex items-center gap-2 text-sm">
+            <ShieldCheck className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="text-muted-foreground">
+              File: <code className="font-mono text-xs bg-muted px-1 py-0.5 rounded">{currentGuide.file}</code>
+            </span>
+          </div>
+          {"fileNote" in currentGuide && currentGuide.fileNote && (
+            <p className="text-xs text-muted-foreground pl-6">{currentGuide.fileNote}</p>
+          )}
+          <p className="text-sm text-muted-foreground">{currentGuide.description}</p>
+
+          <div className="relative">
+            <pre className="bg-muted rounded-md p-3 overflow-x-auto font-mono text-xs leading-relaxed">
+              {currentGuide.snippet}
+            </pre>
+            <Button
+              size="sm"
+              variant="outline"
+              className="absolute top-2 right-2 h-7 text-xs"
+              onClick={() => copySnippet(currentGuide.snippet)}
+            >
+              {snippetCopied ? (
+                <><Check className="h-3 w-3 mr-1" /> Copied</>
+              ) : (
+                <><Copy className="h-3 w-3 mr-1" /> Copy</>
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

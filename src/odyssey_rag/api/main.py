@@ -21,6 +21,7 @@ from odyssey_rag.api.routes import (
     admin,
     audit,
     auth,
+    categories,
     chunks,
     feedback,
     gc,
@@ -52,6 +53,14 @@ async def lifespan(app: FastAPI):
 
     logger.info("startup", version=APP_VERSION)
     get_engine()  # initialise connection pool
+
+    # S10: Warm up the source type categorizer cache
+    try:
+        from odyssey_rag.ingestion.categorizer import init_categorizer_cache
+
+        await init_categorizer_cache()
+    except Exception:
+        logger.warning("startup.categorizer_cache_failed", exc_info=True)
 
     # S7: Recover jobs left in "running" state by a previous crash
     await recover_interrupted_jobs()
@@ -97,6 +106,7 @@ def create_app() -> FastAPI:
     app.include_router(admin.router, prefix="/api/v1")
     app.include_router(audit.router, prefix="/api/v1")
     app.include_router(gc.router, prefix="/api/v1")
+    app.include_router(categories.router, prefix="/api/v1", tags=["categories"])
 
     # ── Health endpoint ───────────────────────────────────────────────────────
 

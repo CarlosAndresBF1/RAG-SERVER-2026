@@ -34,7 +34,7 @@ The MCP server exposes **6 tools** designed for the ISO 20022 / Barbados IPS / O
           "source_type": "annex_b_spec",
           "source_id": "IPS_Annex_B_Message_Specifications.md",
           "locator": "§ pacs.008 > GrpHdr > MsgId",
-          "uri": "oddysey://docs/annex-b/pacs.008#GrpHdr-MsgId"
+          "uri": "odyssey://docs/annex-b/pacs.008#GrpHdr-MsgId"
         }
       ],
       "metadata": {
@@ -53,7 +53,7 @@ The MCP server exposes **6 tools** designed for the ISO 20022 / Barbados IPS / O
   ],
   "followups": [
     {
-      "tool": "oddysey_rag.find_error",
+      "tool": "odyssey_rag.find_error",
       "args": {"iso_status": "RJCT", "reason_code": "FF01", "message_type_hint": "pacs.008"},
       "rationale": "Check XSD validation failure handling for this message type"
     }
@@ -63,7 +63,7 @@ The MCP server exposes **6 tools** designed for the ISO 20022 / Barbados IPS / O
 
 ---
 
-## Tool 1: `oddysey_rag.find_message_type`
+## Tool 1: `odyssey_rag.find_message_type`
 
 ### Purpose
 Retrieve comprehensive evidence for an ISO 20022 message type: Annex B specification fields, PHP builder/parser/validator code, XML examples, and related docs.
@@ -78,7 +78,7 @@ Retrieve comprehensive evidence for an ISO 20022 message type: Annex B specifica
 
 ```json
 {
-  "name": "oddysey_rag.find_message_type",
+  "name": "odyssey_rag.find_message_type",
   "description": "Retrieve evidence (Annex B spec, PHP code, XML examples) for an ISO 20022 message type and its Odyssey implementation.",
   "inputSchema": {
     "type": "object",
@@ -174,7 +174,7 @@ Retrieve comprehensive evidence for an ISO 20022 message type: Annex B specifica
 
 ---
 
-## Tool 2: `oddysey_rag.find_business_rule`
+## Tool 2: `odyssey_rag.find_business_rule`
 
 ### Purpose
 Search for specific validation rules, field constraints, or ISO code definitions from the Annex B specification and their implementation in Odyssey validators.
@@ -189,7 +189,7 @@ Search for specific validation rules, field constraints, or ISO code definitions
 
 ```json
 {
-  "name": "oddysey_rag.find_business_rule",
+  "name": "odyssey_rag.find_business_rule",
   "description": "Search for Annex B validation rules (M/O/C/R), field constraints, ISO code definitions, and their Odyssey validator implementation.",
   "inputSchema": {
     "type": "object",
@@ -294,7 +294,7 @@ Evidence should include:
 
 ---
 
-## Tool 3: `oddysey_rag.find_module`
+## Tool 3: `odyssey_rag.find_module`
 
 ### Purpose
 Map the Odyssey/Bimpay implementation: file paths, PHP classes, key methods, tests, configs, and architectural decisions for a given module or integration area.
@@ -309,7 +309,7 @@ Map the Odyssey/Bimpay implementation: file paths, PHP classes, key methods, tes
 
 ```json
 {
-  "name": "oddysey_rag.find_module",
+  "name": "odyssey_rag.find_module",
   "description": "Map Odyssey implementation: file paths, PHP classes, key methods, tests, and architecture for a given module or integration area.",
   "inputSchema": {
     "type": "object",
@@ -438,7 +438,7 @@ In addition to the standard `evidence[]`, this tool returns a structured map:
 
 ---
 
-## Tool 4: `oddysey_rag.find_error`
+## Tool 4: `odyssey_rag.find_error`
 
 ### Purpose
 Troubleshoot errors using ISO 20022 status codes (`TxSts`: RJCT, ACSP, PDNG), reason codes (AC03, AM04, FF01, MD07), and Odyssey error handling patterns.
@@ -453,7 +453,7 @@ Troubleshoot errors using ISO 20022 status codes (`TxSts`: RJCT, ACSP, PDNG), re
 
 ```json
 {
-  "name": "oddysey_rag.find_error",
+  "name": "odyssey_rag.find_error",
   "description": "Troubleshoot ISO 20022 errors: transaction status codes (RJCT/ACSP/PDNG), reason codes (AC03/FF01/AM04), and Odyssey error handling implementation.",
   "inputSchema": {
     "type": "object",
@@ -576,7 +576,7 @@ When `include_resolution=true`:
 
 ---
 
-## Tool 5: `oddysey_rag.search`
+## Tool 5: `odyssey_rag.search`
 
 ### Purpose
 Free-text semantic search across all indexed sources. Fallback when domain-specific tools don't cover the query.
@@ -585,7 +585,7 @@ Free-text semantic search across all indexed sources. Fallback when domain-speci
 
 ```json
 {
-  "name": "oddysey_rag.search",
+  "name": "odyssey_rag.search",
   "description": "Free-text semantic search across all indexed Odyssey/Bimpay/IPS documentation and code. Use when domain-specific tools don't cover the query.",
   "inputSchema": {
     "type": "object",
@@ -634,7 +634,7 @@ Free-text semantic search across all indexed sources. Fallback when domain-speci
 
 ---
 
-## Tool 6: `oddysey_rag.ingest`
+## Tool 6: `odyssey_rag.ingest`
 
 ### Purpose
 Feed new documents into the RAG knowledge base. Used to add new documentation, code snapshots, or PDFs as they become available.
@@ -643,7 +643,7 @@ Feed new documents into the RAG knowledge base. Used to add new documentation, c
 
 ```json
 {
-  "name": "oddysey_rag.ingest",
+  "name": "odyssey_rag.ingest",
   "description": "Ingest new documents into the Odyssey RAG knowledge base. Supports Markdown, PHP code, XML examples, PDFs, and Postman collections.",
   "inputSchema": {
     "type": "object",
@@ -739,19 +739,19 @@ Feed new documents into the RAG knowledge base. Used to add new documentation, c
 When an AI agent needs to implement a feature or debug an issue, the recommended tool chain is:
 
 ```
-1. oddysey_rag.find_module
+1. odyssey_rag.find_module
    └─ Understand the codebase: entry points, patterns, related tests
 
-2. oddysey_rag.find_message_type
+2. odyssey_rag.find_message_type
    └─ Get the spec: fields, builder pattern, XML structure, examples
 
-3. oddysey_rag.find_business_rule
+3. odyssey_rag.find_business_rule
    └─ Get validation details: M/O/C/R rules, code lists, constraints
 
-4. oddysey_rag.find_error (if debugging)
+4. odyssey_rag.find_error (if debugging)
    └─ Understand the error: status code meaning, handler location, fix steps
 
-5. oddysey_rag.search (if needed)
+5. odyssey_rag.search (if needed)
    └─ Catch-all for queries not covered by domain tools
 
 6. Implement the change, citing evidence from steps 1-5
@@ -768,7 +768,7 @@ Uses **streamable HTTP transport** (MCP 2025-03-26 spec):
 ```json
 {
   "servers": {
-    "oddysey-rag": {
+    "odyssey-rag": {
       "type": "http",
       "url": "http://localhost:3010/mcp/",
       "headers": {

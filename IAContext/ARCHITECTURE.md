@@ -43,12 +43,12 @@ The Odyssey RAG is a **self-contained, dockerized knowledge retrieval system** t
 │  │                   MCP Server (Python)                    │        │
 │  │                                                         │        │
 │  │  Tools:                                                 │        │
-│  │  ├─ oddysey_rag.find_message_type                       │        │
-│  │  ├─ oddysey_rag.find_business_rule                      │        │
-│  │  ├─ oddysey_rag.find_module                             │        │
-│  │  ├─ oddysey_rag.find_error                              │        │
-│  │  ├─ oddysey_rag.search (free-text)                      │        │
-│  │  └─ oddysey_rag.ingest (feed new docs)                  │        │
+│  │  ├─ odyssey_rag.find_message_type                       │        │
+│  │  ├─ odyssey_rag.find_business_rule                      │        │
+│  │  ├─ odyssey_rag.find_module                             │        │
+│  │  ├─ odyssey_rag.find_error                              │        │
+│  │  ├─ odyssey_rag.search (free-text)                      │        │
+│  │  └─ odyssey_rag.ingest (feed new docs)                  │        │
 │  │                                                         │        │
 │  │  Transports: stdio + HTTP/SSE (dual mode)               │        │
 │  └────────────────────────┬────────────────────────────────┘        │

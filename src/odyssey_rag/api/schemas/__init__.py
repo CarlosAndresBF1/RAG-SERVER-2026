@@ -10,7 +10,6 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-
 # ── Health ────────────────────────────────────────────────────────────────────
 
 
@@ -193,3 +192,56 @@ class ErrorResponse(BaseModel):
     detail: str
     error_code: str
     context: dict[str, Any] = {}
+
+
+# ── Categories ────────────────────────────────────────────────────────────────
+
+
+class CategoryRuleCreate(BaseModel):
+    pattern: str = Field(..., min_length=1, max_length=500, description="Regex pattern")
+    source_type: str = Field(..., min_length=1, max_length=50)
+    description: str | None = None
+    priority: int = Field(100, ge=0, le=10000)
+
+
+class CategoryRuleUpdate(BaseModel):
+    pattern: str | None = Field(None, min_length=1, max_length=500)
+    source_type: str | None = Field(None, min_length=1, max_length=50)
+    description: str | None = None
+    priority: int | None = Field(None, ge=0, le=10000)
+
+
+class CategoryRuleResponse(BaseModel):
+    id: str
+    pattern: str
+    source_type: str
+    description: str | None = None
+    priority: int
+    is_active: bool
+    created_by: str | None = None
+    created_at: str | None = None
+    updated_at: str | None = None
+
+
+class CategoryListItem(BaseModel):
+    source_type: str
+    origin: str  # "hardcoded" | "custom" | "keyword"
+
+
+class CategoryListResponse(BaseModel):
+    items: list[dict[str, str]]
+    total: int
+
+
+class CategorySuggestionResponse(BaseModel):
+    source_type: str
+    doc_count: int
+
+
+class CategoryDetectRequest(BaseModel):
+    filename: str = Field(..., min_length=1, max_length=1000)
+
+
+class CategoryDetectResponse(BaseModel):
+    filename: str
+    source_type: str

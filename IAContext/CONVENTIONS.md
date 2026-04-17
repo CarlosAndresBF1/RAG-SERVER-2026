@@ -62,7 +62,7 @@ warn_unused_configs = true
 | **API routes** | `lowercase-kebab` | `/api/v1/search`, `/api/v1/chunk/{id}` |
 | **DB tables** | `snake_case` (singular) | `document`, `chunk`, `embedding` |
 | **DB columns** | `snake_case` | `source_type`, `message_type`, `created_at` |
-| **MCP tool names** | `namespace.verb_noun` | `oddysey_rag.find_message_type` |
+| **MCP tool names** | `namespace.verb_noun` | `odyssey_rag.find_message_type` |
 
 ### 2.3 Docstrings
 

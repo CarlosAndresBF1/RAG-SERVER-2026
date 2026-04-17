@@ -1,4 +1,4 @@
-"""Handler for oddysey_rag.find_business_rule MCP tool.
+"""Handler for odyssey_rag.find_business_rule MCP tool.
 
 Searches for Annex B validation rules, field constraints, and ISO code
 definitions and their Odyssey validator implementation.

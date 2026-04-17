@@ -21,7 +21,7 @@ Input File → Detect Type → Parse → Chunk → Extract Metadata → Embed �
 |-------|---------|
 | `POST /api/v1/ingest` | HTTP API call (async — returns job_id immediately) |
 | `POST /api/v1/ingest/batch` | Batch HTTP API call (async — returns job IDs) |
-| `oddysey_rag.ingest` | MCP tool call from VS Code |
+| `odyssey_rag.ingest` | MCP tool call from VS Code |
 | `scripts/seed_initial_sources.py` | One-time initial seeding |
 
 ### 1.2 Async Processing Model

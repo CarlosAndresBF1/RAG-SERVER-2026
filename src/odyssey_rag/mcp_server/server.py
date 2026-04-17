@@ -32,14 +32,14 @@ def create_server():
     from odyssey_rag.mcp_server.tools.search import search_handler
 
     mcp = FastMCP(
-        "oddysey-rag",
+        "odyssey-rag",
         description="RAG system for ISO 20022 / Odyssey / Bimpay IPS domain knowledge",
     )
 
     # ── Register tools using the handler functions ────────────────────────────
 
     @mcp.tool(
-        name="oddysey_rag_find_message_type",
+        name="odyssey_rag_find_message_type",
         description=(
             "Retrieve evidence (Annex B spec, PHP code, XML examples) for an ISO 20022 "
             "message type and its Odyssey implementation."
@@ -59,7 +59,7 @@ def create_server():
         )
 
     @mcp.tool(
-        name="oddysey_rag_find_business_rule",
+        name="odyssey_rag_find_business_rule",
         description=(
             "Search for Annex B validation rules (M/O/C/R), field constraints, "
             "ISO code definitions, and their Odyssey validator implementation."
@@ -85,7 +85,7 @@ def create_server():
         )
 
     @mcp.tool(
-        name="oddysey_rag_find_module",
+        name="odyssey_rag_find_module",
         description=(
             "Map Odyssey implementation: file paths, PHP classes, key methods, "
             "tests, and architecture for a given module or integration area."
@@ -107,7 +107,7 @@ def create_server():
         )
 
     @mcp.tool(
-        name="oddysey_rag_find_error",
+        name="odyssey_rag_find_error",
         description=(
             "Troubleshoot ISO 20022 errors: transaction status codes (RJCT/ACSP/PDNG), "
             "reason codes (AC03/FF01/AM04), and Odyssey error handling implementation."
@@ -131,7 +131,7 @@ def create_server():
         )
 
     @mcp.tool(
-        name="oddysey_rag_search",
+        name="odyssey_rag_search",
         description=(
             "Free-text semantic search across all indexed Odyssey/Bimpay/IPS "
             "documentation and code. Use when domain-specific tools don't "
@@ -153,7 +153,7 @@ def create_server():
         )
 
     @mcp.tool(
-        name="oddysey_rag_ingest",
+        name="odyssey_rag_ingest",
         description=(
             "Ingest new documents into the Odyssey RAG knowledge base. "
             "Supports Markdown, PHP code, XML examples, PDFs, and Postman collections."

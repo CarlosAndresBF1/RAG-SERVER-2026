@@ -1,4 +1,4 @@
-"""Handler for oddysey_rag.search MCP tool.
+"""Handler for odyssey_rag.search MCP tool.
 
 Free-text semantic search across all indexed Odyssey/Bimpay/IPS
 documentation and code. Fallback when domain-specific tools don't apply.

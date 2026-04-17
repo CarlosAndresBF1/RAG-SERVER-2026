@@ -1,4 +1,4 @@
-"""Handler for oddysey_rag.find_error MCP tool.
+"""Handler for odyssey_rag.find_error MCP tool.
 
 Troubleshoots ISO 20022 errors using transaction status codes (RJCT/ACSP/PDNG),
 reason codes (AC03/FF01/AM04), and Odyssey error handling patterns.

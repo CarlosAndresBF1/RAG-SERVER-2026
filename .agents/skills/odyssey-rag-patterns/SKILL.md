@@ -18,7 +18,7 @@ Project-specific patterns discovered during comprehensive audit and implementati
 ## Critical Rules
 
 1. **NEVER** change embedding dimensions (768) without re-indexing all documents
-2. **NEVER** modify the MCP server name `"oddysey-rag"` — it's a typo but part of the contract
+2. **NEVER** modify the MCP server name `"odyssey-rag"` — it is the canonical contract name
 3. **ALWAYS** use `c.tsvector_content` for BM25 queries (not `to_tsvector()`)
 4. **ALWAYS** use `run_in_executor` for CPU-bound ML inference (reranker, embeddings)
 5. **ALWAYS** filter `WHERE d.is_current = TRUE` in all retrieval queries

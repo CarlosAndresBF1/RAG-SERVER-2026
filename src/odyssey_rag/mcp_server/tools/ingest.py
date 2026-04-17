@@ -1,4 +1,4 @@
-"""Handler for oddysey_rag.ingest MCP tool.
+"""Handler for odyssey_rag.ingest MCP tool.
 
 Ingests new documents into the Odyssey RAG knowledge base via the
 standard ingestion pipeline.

@@ -429,18 +429,18 @@ class TestMcpServer:
         tools = await mcp_client.list_tools()
         tool_names = {t.name for t in tools}
         expected = {
-            "oddysey_rag.find_message_type",
-            "oddysey_rag.find_business_rule",
-            "oddysey_rag.find_module",
-            "oddysey_rag.find_error",
-            "oddysey_rag.search",
-            "oddysey_rag.ingest",
+            "odyssey_rag.find_message_type",
+            "odyssey_rag.find_business_rule",
+            "odyssey_rag.find_module",
+            "odyssey_rag.find_error",
+            "odyssey_rag.search",
+            "odyssey_rag.ingest",
         }
         assert expected.issubset(tool_names)
 
     async def test_find_message_type_returns_evidence(self, mcp_client, seeded_db):
         """find_message_type should return structured evidence."""
-        result = await mcp_client.call_tool("oddysey_rag.find_message_type", {
+        result = await mcp_client.call_tool("odyssey_rag.find_message_type", {
             "message_type": "pacs.008",
         })
         assert result.content
@@ -449,7 +449,7 @@ class TestMcpServer:
 
     async def test_find_module_returns_module_map(self, mcp_client, seeded_db):
         """find_module should return module_map object."""
-        result = await mcp_client.call_tool("oddysey_rag.find_module", {
+        result = await mcp_client.call_tool("odyssey_rag.find_module", {
             "query": "pacs.008 builder",
         })
         data = json.loads(result.content[0].text)
