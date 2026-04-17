@@ -1,6 +1,6 @@
-# Oddysey RAG — Admin Dashboard
+# Odyssey RAG — Admin Dashboard
 
-The Clerk-themed admin UI for Oddysey RAG. Built with **Next.js 16**, **React 19**, **Tailwind CSS 4**, and **shadcn/ui**.
+The Clerk-themed admin UI for Odyssey RAG. Built with **Next.js 16**, **React 19**, **Tailwind CSS 4**, and **shadcn/ui**.
 
 ## Tech Stack
 

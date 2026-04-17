@@ -37,7 +37,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   const nav = (
     <>
       <div className="h-14 flex items-center justify-between px-4 border-b border-sidebar-border bg-sidebar/50">
-        <h1 className="font-serif text-lg text-primary font-bold tracking-tight">Oddysey RAG</h1>
+        <h1 className="font-serif text-lg text-primary font-bold tracking-tight">Odyssey RAG</h1>
         {onClose && (
           <button onClick={onClose} className="md:hidden inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-sidebar-accent" aria-label="Close sidebar">
             <X className="h-4 w-4" />

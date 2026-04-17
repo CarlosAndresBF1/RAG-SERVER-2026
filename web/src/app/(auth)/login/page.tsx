@@ -50,7 +50,7 @@ export default function LoginPage() {
     <div className="w-full max-w-md mx-auto">
       <Card className="border-border/50 shadow-lg font-sans">
         <CardHeader className="space-y-1 text-center bg-primary/5 rounded-t-xl pb-8 pt-8">
-          <CardTitle className="text-2xl font-serif text-primary tracking-tight">Oddysey RAG</CardTitle>
+          <CardTitle className="text-2xl font-serif text-primary tracking-tight">Odyssey RAG</CardTitle>
           <CardDescription className="text-muted-foreground">
             Sign in to the Admin Dashboard
           </CardDescription>

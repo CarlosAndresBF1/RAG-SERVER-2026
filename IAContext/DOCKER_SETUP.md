@@ -386,8 +386,8 @@ clean:                           ## Remove containers, volumes, images
 
 ```bash
 # 1. Clone and configure
-git clone git@github.com:cbeltran-dev-blossom/RAG-oddysey-2026.git
-cd RAG-oddysey-2026
+git clone git@github.com:cbeltran-dev-blossom/RAG-odyssey-2026.git
+cd RAG-odyssey-2026
 cp .env.example .env
 # Edit .env: set POSTGRES_PASSWORD and API keys
 

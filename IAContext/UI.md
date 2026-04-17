@@ -324,7 +324,7 @@ CREATE INDEX idx_mcp_audit_created ON mcp_token_audit (created_at DESC);
 ```
 odr_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4
 
-Prefijo: odr_         (identifica como Oddysey RAG token)
+Prefijo: odr_         (identifica como Odyssey RAG token)
 Body:    48 chars      (crypto random, base62)
 Total:   52 chars
 
