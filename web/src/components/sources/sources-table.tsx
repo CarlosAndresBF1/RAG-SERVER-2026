@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { SourceItem } from "@/types/api";
 import { Badge } from "@/components/ui/badge";
@@ -251,11 +250,9 @@ export function SourcesTable({ items, total, page, pageSize, currentSourceType }
                     {new Date(item.ingested_at).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
-                    <Link href={`/sources/${item.id}`}>
-                      <Button variant="ghost" size="sm">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </Link>
+                    <Button variant="ghost" size="sm" onClick={() => router.push(`/sources/${item.id}`)}>
+                      <Eye className="h-4 w-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))
