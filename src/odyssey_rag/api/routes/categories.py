@@ -10,7 +10,7 @@ import re
 import uuid
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 
 from odyssey_rag.api.auth import verify_api_key
 from odyssey_rag.api.schemas import (
@@ -169,10 +169,11 @@ async def update_rule(rule_id: uuid.UUID, body: CategoryRuleUpdate) -> CategoryR
 @router.delete(
     "/categories/rules/{rule_id}",
     status_code=204,
+    response_class=Response,
     summary="Soft-delete a custom detection rule",
     dependencies=[Depends(verify_api_key)],
 )
-async def delete_rule(rule_id: uuid.UUID) -> None:
+async def delete_rule(rule_id: uuid.UUID):
     """Soft-delete a rule (set is_active=False)."""
     async with db_session() as session:
         repo = SourceTypeRuleRepository(session)
@@ -182,6 +183,7 @@ async def delete_rule(rule_id: uuid.UUID) -> None:
 
     categorizer = get_categorizer()
     await categorizer.refresh_cache()
+    return Response(status_code=204)
 
 
 # ── GET /categories/suggestions — auto-suggest rules ────────────────────────
