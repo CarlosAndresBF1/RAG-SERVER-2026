@@ -52,7 +52,17 @@ async def lifespan(app: FastAPI):
     )
 
     logger.info("startup", version=APP_VERSION)
-    get_engine()  # initialise connection pool
+    engine = get_engine()  # initialise connection pool
+
+    # Auto-create any missing tables (e.g. source_type_rule from S10)
+    try:
+        from odyssey_rag.db.models import Base
+
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        logger.info("startup.tables_ensured")
+    except Exception:
+        logger.warning("startup.tables_ensure_failed", exc_info=True)
 
     # S10: Warm up the source type categorizer cache
     try:
