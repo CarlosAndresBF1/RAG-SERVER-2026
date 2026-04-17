@@ -134,17 +134,21 @@ def create_server():
         name="oddysey_rag_search",
         description=(
             "Free-text semantic search across all indexed Odyssey/Bimpay/IPS "
-            "documentation and code. Use when domain-specific tools don't cover the query."
+            "documentation and code. Use when domain-specific tools don't "
+            "cover the query. Optionally scope results to a specific "
+            "integration (e.g. 'bimpay', 'paysset', 'blite')."
         ),
     )
     async def search(
         query: str,
         message_type: str = "",
+        integration: str = "",
         top_k: int = 8,
     ) -> dict:
         return await search_handler(
             query=query,
             message_type=message_type or None,
+            integration=integration or None,
             top_k=top_k,
         )
 

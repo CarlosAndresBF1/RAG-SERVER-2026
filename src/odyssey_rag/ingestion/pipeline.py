@@ -66,6 +66,11 @@ SOURCE_TYPE_RULES: list[tuple[str, str]] = [
     (r"(?i)qr|codigo.?qr", "qr_doc"),
     (r"(?i)home.?banking|banca.?electronica", "banking_doc"),
     (r"(?i)integration|integraci[oó]n", "integration_doc"),
+    # ── Multi-integration source types ────────────────────────────────────
+    (r"(?i)paysett?", "paysett_doc"),
+    (r"(?i)blossom|blite|bl[-_]", "blite_doc"),
+    (r"(?i)runbook|operations|ops[-_]", "runbook"),
+    (r"(?i)architecture|system[-_]?design", "architecture_doc"),
     # ── Code & data sources ───────────────────────────────────────────────
     (r"\.php$", "php_code"),
     (r"\.xml$", "xml_example"),

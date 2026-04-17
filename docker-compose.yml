@@ -115,6 +115,12 @@ services:
       - "host.docker.internal:host-gateway"
     ports:
       - "${MCP_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:3000/health').raise_for_status()"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     volumes:
       - rag-models:/app/models          # Share cached model weights with api
     networks:

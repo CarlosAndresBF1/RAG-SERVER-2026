@@ -56,14 +56,14 @@ async def bm25_search(
             d.source_type,
             cm.message_type,
             ts_rank_cd(
-                to_tsvector('english', c.content),
+                c.tsvector_content,
                 websearch_to_tsquery('english', :query)
             ) AS score
         FROM chunk c
         JOIN document d ON c.document_id = d.id
         LEFT JOIN chunk_metadata cm ON c.id = cm.chunk_id
         WHERE d.is_current = TRUE
-          AND to_tsvector('english', c.content)
+          AND c.tsvector_content
                   @@ websearch_to_tsquery('english', :query)
           AND (CAST(:msg_type AS TEXT) IS NULL OR cm.message_type = CAST(:msg_type AS TEXT))
           AND (CAST(:source_type AS TEXT) IS NULL OR d.source_type = CAST(:source_type AS TEXT))

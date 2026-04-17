@@ -13,6 +13,7 @@ from odyssey_rag.mcp_server.tools._output import to_mcp_output
 async def search_handler(
     query: str,
     message_type: str | None = None,
+    integration: str | None = None,
     top_k: int = 8,
 ) -> dict:
     """Return evidence for a free-text semantic query."""
@@ -21,6 +22,8 @@ async def search_handler(
     tool_context: dict[str, str] = {}
     if message_type:
         tool_context["message_type"] = message_type
+    if integration:
+        tool_context["integration"] = integration
 
     response = await engine.search(
         query,

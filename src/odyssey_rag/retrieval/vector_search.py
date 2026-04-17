@@ -71,6 +71,7 @@ async def vector_search(
     filters = filters or {}
     msg_type = filters.get("message_type")
     source_type = filters.get("source_type")
+    integration = filters.get("integration")
 
     # Build parameterized query
     # Note: pgvector embedding parameter must be cast to vector type
@@ -93,6 +94,7 @@ async def vector_search(
         WHERE d.is_current = TRUE
           AND (CAST(:msg_type AS TEXT) IS NULL OR cm.message_type = CAST(:msg_type AS TEXT))
           AND (CAST(:source_type AS TEXT) IS NULL OR d.source_type = CAST(:source_type AS TEXT))
+          AND (CAST(:integration AS TEXT) IS NULL OR d.integration = CAST(:integration AS TEXT))
         ORDER BY ce.embedding <=> CAST(:embedding AS vector)
         LIMIT :limit
         """
@@ -117,6 +119,7 @@ async def vector_search(
                     "embedding": embedding_str,
                     "msg_type": msg_type,
                     "source_type": source_type,
+                    "integration": integration,
                     "limit": limit,
                 },
             )

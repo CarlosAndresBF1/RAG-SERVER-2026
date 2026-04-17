@@ -10,6 +10,7 @@ available or if reranking is disabled in settings.
 
 from __future__ import annotations
 
+import asyncio
 from functools import cached_property
 
 import structlog
@@ -52,7 +53,7 @@ class CrossEncoderReranker:
 
         return CrossEncoder(self.model_name)
 
-    def rerank(
+    async def rerank(
         self,
         query: str,
         candidates: list[SearchResult],
@@ -74,7 +75,12 @@ class CrossEncoderReranker:
 
         try:
             pairs = [(query, c.content) for c in candidates]
-            scores = self._model.predict(pairs)  # type: ignore[union-attr]
+            loop = asyncio.get_running_loop()
+            scores = await loop.run_in_executor(
+                None,
+                self._model.predict,
+                pairs,  # type: ignore[union-attr]
+            )
 
             for candidate, score in zip(candidates, scores):
                 candidate.rerank_score = float(score)
@@ -102,7 +108,7 @@ class PassthroughReranker:
     faster development or low-latency deployments.
     """
 
-    def rerank(
+    async def rerank(
         self,
         query: str,
         candidates: list[SearchResult],

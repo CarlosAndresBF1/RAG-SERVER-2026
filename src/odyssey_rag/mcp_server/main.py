@@ -69,6 +69,9 @@ def main(argv: list[str] | None = None) -> None:
         mcp.run(transport="stdio")
     else:
         import uvicorn
+        from starlette.responses import JSONResponse
+        from starlette.routing import Route
+
         from odyssey_rag.mcp_server.auth_middleware import McpTokenAuthMiddleware
 
         logger.info("mcp_server.http_start", host=args.host, port=args.port)
@@ -76,6 +79,13 @@ def main(argv: list[str] | None = None) -> None:
         # Use streamable HTTP transport (MCP 2025-03-26 spec)
         # Endpoint: POST /mcp
         app = mcp.streamable_http_app()
+
+        # ── Health endpoint (public, no auth) ─────────────────────────────
+        async def _health_endpoint(request):
+            return JSONResponse({"status": "ok"})
+
+        app.routes.insert(0, Route("/health", _health_endpoint, methods=["GET"]))
+
         app.add_middleware(McpTokenAuthMiddleware)
         uvicorn.run(app, host=args.host, port=args.port, log_level="info")
 

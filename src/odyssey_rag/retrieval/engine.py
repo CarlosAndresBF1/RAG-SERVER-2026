@@ -65,8 +65,8 @@ class RetrievalEngine:
             max_evidence_items=settings.default_top_k,
         )
         if settings.reranker_enabled:
-            self._reranker: CrossEncoderReranker | PassthroughReranker = (
-                CrossEncoderReranker(model_name=settings.reranker_model)
+            self._reranker: CrossEncoderReranker | PassthroughReranker = CrossEncoderReranker(
+                model_name=settings.reranker_model
             )
         else:
             self._reranker = PassthroughReranker()
@@ -119,6 +119,11 @@ class RetrievalEngine:
         # would return zero rows. Vector similarity handles message specificity instead.
         if "source_type" in all_filters:
             all_filters.pop("message_type", None)
+
+        # Pass integration filter directly from tool_context
+        integration = (tool_context or {}).get("integration")
+        if integration:
+            all_filters["integration"] = integration
 
         # 4. Embed query for vector search
         try:
@@ -176,7 +181,7 @@ class RetrievalEngine:
 
         # 6. Rerank
         settings2 = get_settings()
-        reranked = self._reranker.rerank(
+        reranked = await self._reranker.rerank(
             query=processed.vector_query,
             candidates=merged,
             top_k=settings2.default_top_k,
