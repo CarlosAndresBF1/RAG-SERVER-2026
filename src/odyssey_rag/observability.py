@@ -69,3 +69,20 @@ RERANKER_DURATION = Histogram(
     "Reranker duration in seconds",
     buckets=(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0),
 )
+
+# ── Job resilience metrics (S7) ──────────────────────────────────────────────
+
+JOBS_RECOVERED = Counter(
+    "rag_jobs_recovered_total",
+    "Jobs recovered on startup (interrupted by restart)",
+)
+
+JOBS_TIMED_OUT = Counter(
+    "rag_jobs_timed_out_total",
+    "Jobs timed out by the watchdog",
+)
+
+ACTIVE_INGEST_TASKS = Gauge(
+    "rag_active_ingest_tasks",
+    "Currently running asyncio ingest tasks",
+)

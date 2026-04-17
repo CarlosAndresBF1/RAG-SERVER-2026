@@ -43,10 +43,26 @@ APP_VERSION = "0.1.0"
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan — warm up on startup, clean up on shutdown."""
+    from odyssey_rag.job_resilience import (
+        IngestTaskRegistry,
+        recover_interrupted_jobs,
+        start_watchdog,
+        stop_watchdog,
+    )
+
     logger.info("startup", version=APP_VERSION)
     get_engine()  # initialise connection pool
+
+    # S7: Recover jobs left in "running" state by a previous crash
+    await recover_interrupted_jobs()
+    start_watchdog()
+
     yield
-    logger.info("shutdown")
+
+    # S7: Graceful shutdown — cancel in-flight tasks, stop watchdog
+    logger.info("shutdown", active_tasks=IngestTaskRegistry.active_count())
+    await IngestTaskRegistry.cancel_all()
+    await stop_watchdog()
     await close_engine()
 
 

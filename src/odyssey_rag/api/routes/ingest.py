@@ -22,6 +22,7 @@ from odyssey_rag.db.models import IngestJob
 from odyssey_rag.db.repositories.ingest_jobs import IngestJobRepository
 from odyssey_rag.db.session import db_session
 from odyssey_rag.ingestion.pipeline import detect_source_type, ingest
+from odyssey_rag.job_resilience import IngestTaskRegistry
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
@@ -73,14 +74,15 @@ async def ingest_file(
         )
         await job_repo.insert(job)
 
-    # Fire-and-forget background processing
-    asyncio.create_task(
+    # Fire-and-forget background processing (tracked for graceful shutdown)
+    task = asyncio.create_task(
         _run_ingest_background(
             source_path=request.source_path,
             overrides=overrides or None,
             replace_existing=request.replace_existing,
         )
     )
+    IngestTaskRegistry.register(job_id, task)
 
     return {
         "job_id": str(job_id),
@@ -121,13 +123,14 @@ async def ingest_batch(
             )
             await job_repo.insert(job)
 
-        asyncio.create_task(
+        task = asyncio.create_task(
             _run_ingest_background(
                 source_path=item.source_path,
                 overrides=overrides or None,
                 replace_existing=request.replace_existing,
             )
         )
+        IngestTaskRegistry.register(job_id, task)
 
         jobs_created.append({
             "job_id": str(job_id),

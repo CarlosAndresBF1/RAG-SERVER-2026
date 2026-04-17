@@ -55,6 +55,10 @@ class Settings(BaseSettings):
     cache_max_size: int = 256
     cache_enabled: bool = True
 
+    # ── Job resilience ────────────────────────
+    job_timeout_minutes: int = 30  # mark running jobs as failed after this
+    job_watchdog_interval: int = 60  # seconds between watchdog sweeps
+
     # ── Auth ──────────────────────────────────
     # Comma-separated list of valid API keys, e.g. "key-abc123,key-def456"
     api_keys: list[str] = []

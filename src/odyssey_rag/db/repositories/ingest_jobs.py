@@ -7,10 +7,10 @@ querying pending/failed jobs for retry logic.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import structlog
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from odyssey_rag.db.models import IngestJob
@@ -187,3 +187,71 @@ class IngestJobRepository:
             .limit(1)
         )
         return result.scalar_one_or_none()
+
+    # ── S7: Resilience methods ────────────────────────────────────────────────
+
+    async def recover_interrupted_jobs(self) -> int:
+        """Mark all ``running`` jobs as ``failed`` on startup.
+
+        Called during application startup to clean up jobs that were
+        interrupted by a container restart or crash.
+
+        Returns:
+            Number of jobs recovered.
+        """
+        now = datetime.now(tz=timezone.utc)
+        result = await self._session.execute(
+            update(IngestJob)
+            .where(IngestJob.status == "running")
+            .values(
+                status="failed",
+                error_message="Process interrupted — recovered on startup",
+                completed_at=now,
+            )
+        )
+        count = result.rowcount
+        if count:
+            logger.warning("ingest_job.startup_recovery", recovered=count)
+        return count
+
+    async def fail_stale_jobs(self, timeout_minutes: int) -> int:
+        """Mark ``running`` jobs older than *timeout_minutes* as ``failed``.
+
+        Called periodically by the watchdog to detect zombie jobs that
+        have exceeded the expected processing time.
+
+        Args:
+            timeout_minutes: Maximum age (in minutes) of a running job
+                before it is considered stale.
+
+        Returns:
+            Number of stale jobs marked as failed.
+        """
+        cutoff = datetime.now(tz=timezone.utc) - timedelta(minutes=timeout_minutes)
+        result = await self._session.execute(
+            update(IngestJob)
+            .where(
+                IngestJob.status == "running",
+                IngestJob.started_at < cutoff,
+            )
+            .values(
+                status="failed",
+                error_message=f"Job timed out after {timeout_minutes} minutes",
+                completed_at=datetime.now(tz=timezone.utc),
+            )
+        )
+        count = result.rowcount
+        if count:
+            logger.warning("ingest_job.timeout", timed_out=count, cutoff_minutes=timeout_minutes)
+        return count
+
+    async def count_by_status(self) -> dict[str, int]:
+        """Return a count of jobs grouped by status.
+
+        Useful for health checks and observability dashboards.
+        """
+        result = await self._session.execute(
+            select(IngestJob.status, func.count())
+            .group_by(IngestJob.status)
+        )
+        return dict(result.all())
