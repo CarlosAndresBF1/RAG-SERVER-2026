@@ -20,7 +20,7 @@ Self-contained knowledge retrieval system for the **Odyssey project** — indexe
 │         │                               │                        │
 │         ▼                               ▼                        │
 │  ┌──────────────────────────────────────────────┐               │
-│  │              RAG API (FastAPI) :8080           │               │
+│  │              RAG API (FastAPI) :8089           │               │
 │  │  Search · Ingest · Sources · Stats · Admin    │               │
 │  └──────────────────┬───────────────────────────┘               │
 │                     │                                            │
@@ -29,7 +29,7 @@ Self-contained knowledge retrieval system for the **Odyssey project** — indexe
 │  ┌───────────┐ ┌─────────┐ ┌──────────┐                        │
 │  │ PostgreSQL │ │ nomic   │ │ Reranker │                        │
 │  │ + pgvector │ │ embed   │ │ (cross-  │                        │
-│  │ :5432      │ │ (local) │ │ encoder) │                        │
+│  │ :5433      │ │ (local) │ │ encoder) │                        │
 │  └───────────┘ └─────────┘ └──────────┘                        │
 │                                                                  │
 │                Docker Compose Network                            │
@@ -101,19 +101,22 @@ open http://localhost:3044
 ```
 RAG/
 ├── src/odyssey_rag/           # Python backend
-│   ├── api/                   #   FastAPI routes + schemas
+│   ├── api/                   #   FastAPI routes + schemas (incl. /health, /metrics)
 │   ├── ingestion/             #   Parsers, chunkers, pipeline
-│   ├── retrieval/             #   Hybrid search, reranker, response
+│   ├── retrieval/             #   Hybrid search, reranker, cache
 │   ├── embeddings/            #   Embedding providers (nomic, OpenAI)
 │   ├── llm/                   #   LLM providers (OpenAI, Anthropic, Gemini, Ollama)
 │   ├── mcp_server/            #   MCP server + tools
+│   ├── observability.py       #   Prometheus metrics definitions
+│   ├── maintenance.py         #   Garbage collection logic
 │   └── db/                    #   SQLAlchemy models + repositories
+├── alembic/                   # Alembic database migrations
 ├── web/                       # Next.js admin UI
 │   ├── src/app/               #   Pages (dashboard, sources, search, etc.)
 │   ├── src/components/        #   React components
 │   └── src/lib/               #   Auth, API client, utils
-├── db/                        # PostgreSQL schema + migrations
-├── tests/                     # Backend tests (204+ unit tests)
+├── db/                        # PostgreSQL baseline schema
+├── tests/                     # Backend tests (267 unit tests)
 ├── data/sources/              # Source documents for ingestion
 ├── IAContext/                  # Architecture & planning docs
 ├── docker-compose.yml         # Full stack orchestration
@@ -123,8 +126,14 @@ RAG/
 ## Development
 
 ```bash
-# Backend tests
-PYTHONPATH=src python -m pytest tests/unit/ -x
+# Backend tests (uses project venv)
+PYTHONPATH=src .venv/bin/python -m pytest tests/unit/ -x
+
+# Run via Makefile
+make test-unit          # Unit tests in Docker
+make test-eval          # Evaluation suite
+make lint               # Ruff linter
+make migrate            # Run Alembic migrations (upgrade head)
 
 # Frontend dev (outside Docker)
 cd web && npm install && npm run dev
@@ -183,6 +192,11 @@ Documents are classified by `source_type` — detection is pattern-based on file
 | `qr_doc` | QR / Código QR documentation |
 | `banking_doc` | Home banking documentation |
 | `integration_doc` | Integration guides |
+| `paysett_doc` | PaySett integration documentation |
+| `blite_doc` | Blite/Blossom integration documentation |
+| `runbook` | Operations runbooks and playbooks |
+| `architecture_doc` | Architecture and system design documents |
+| `claude_context` | Claude AI context files |
 | `php_code` | PHP source code |
 | `xml_example` | XML message examples |
 | `postman_collection` | Postman collections |
@@ -194,3 +208,32 @@ Documents are classified by `source_type` — detection is pattern-based on file
 The coverage page shows **two views**:
 1. **Documentation Overview** — all documents by source type (docs, chunks, % distribution)
 2. **ISO 20022 Message Matrix** — message_type × source_type (BimPay/IPS specific)
+
+### Health Endpoints
+Both services expose `/health` for Docker healthchecks and monitoring:
+- **rag-api** (`GET /health`) — checks database, embedding model, and reranker connectivity. Returns `{ "status": "healthy" | "degraded" }` with per-component details.
+- **mcp-server** (`GET /health`) — lightweight liveness check.
+
+### Database Migrations (Alembic)
+Schema changes are managed with **Alembic** (config at `alembic.ini`, migrations in `alembic/`):
+```bash
+make migrate              # Apply pending migrations (alembic upgrade head)
+alembic revision --autogenerate -m "description"   # Create new migration
+```
+
+### Query Result Cache
+Repeated identical queries are served from an **in-memory TTL cache** (`src/odyssey_rag/retrieval/cache.py`). This avoids re-running the full embed → search → fuse → rerank pipeline for the same query within the TTL window. Cache key is a SHA-256 hash of `(query, tool_name, tool_context)`.
+
+### Garbage Collection
+Superseded documents (re-ingested files where `is_current=False`) accumulate over time. The admin GC endpoint removes stale rows:
+```
+POST /api/v1/admin/gc   { "retention_days": 30 }
+```
+Deletes superseded documents older than the retention period, cascading to chunks, embeddings, and metadata.
+
+### Observability (Prometheus)
+The RAG API exposes `GET /metrics` in Prometheus text format. Key metrics:
+- `rag_search_total` / `rag_search_duration_seconds` — search request count and latency
+- `rag_ingestion_total` / `rag_ingestion_duration_seconds` — ingestion job tracking
+- `rag_cache_hits_total` — query cache effectiveness
+- `rag_active_documents` — gauge of current document count
