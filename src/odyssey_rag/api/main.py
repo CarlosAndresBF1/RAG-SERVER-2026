@@ -64,6 +64,33 @@ async def lifespan(app: FastAPI):
     except Exception:
         logger.warning("startup.tables_ensure_failed", exc_info=True)
 
+    # Seed default admin user if none exists
+    try:
+        from odyssey_rag.db.session import db_session
+        from odyssey_rag.db.models import AdminUser
+        import bcrypt
+
+        settings = get_settings()
+        async with db_session() as session:
+            from sqlalchemy import select, func as sa_func
+            count = (await session.execute(
+                select(sa_func.count()).select_from(AdminUser)
+            )).scalar() or 0
+            if count == 0:
+                pw_hash = bcrypt.hashpw(
+                    settings.admin_password.encode(), bcrypt.gensalt()
+                ).decode()
+                session.add(AdminUser(
+                    email=settings.admin_email,
+                    password_hash=pw_hash,
+                    display_name="Admin",
+                    role="admin",
+                    is_active=True,
+                ))
+                logger.info("startup.admin_seeded", email=settings.admin_email)
+    except Exception:
+        logger.warning("startup.admin_seed_failed", exc_info=True)
+
     # S10: Warm up the source type categorizer cache
     try:
         from odyssey_rag.ingestion.categorizer import init_categorizer_cache

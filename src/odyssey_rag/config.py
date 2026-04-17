@@ -59,6 +59,10 @@ class Settings(BaseSettings):
     job_timeout_minutes: int = 30  # mark running jobs as failed after this
     job_watchdog_interval: int = 60  # seconds between watchdog sweeps
 
+    # ── Admin ────────────────────────────────
+    admin_email: str = "admin@odyssey.local"
+    admin_password: str = "admin123"
+
     # ── Auth ──────────────────────────────────
     # Comma-separated list of valid API keys, e.g. "key-abc123,key-def456"
     api_keys: list[str] = []
